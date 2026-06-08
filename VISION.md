@@ -35,6 +35,11 @@ Contribution rules:
 
 ## Security And Responsible Use
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 The example creates public cloud resources and opens inbound HTTP. Users should
 understand credentials, costs, public exposure, and teardown before applying it.
 
