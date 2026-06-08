@@ -1,5 +1,8 @@
 # terraform-basic-example
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/terraform-basic-example` is an infrastructure-as-code example. Create a basic terraform example
@@ -68,4 +71,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > Terraform Example <!-- README-OVERVIEW-IMAGE --> This is a basic example that builds a single webserver using Terraform and outputs "Hello World"
-
