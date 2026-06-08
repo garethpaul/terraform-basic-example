@@ -16,14 +16,14 @@ Priority:
 
 - Preserve the single-instance web server example
 - Keep Terraform version assumptions visible
-- Make AWS region, AMI, and open ingress explicit
+- Make AWS region, AMI, and open ingress explicit and configurable
 - Avoid committing credentials or local state files
 
 Next priorities:
 
 - Add quickstart and destroy instructions to the README
 - Document expected AWS costs and required credentials
-- Parameterize region and AMI with safer defaults
+- Document region-specific AMI selection and safer demo defaults
 - Add notes about restricting ingress beyond demo use
 
 Contribution rules:

@@ -10,6 +10,28 @@
 # OPTIONAL PARAMETERS
 # ---------------------------------------------------------------------------------------------------------------------
 
+variable "aws_region" {
+  description = "AWS region where the example resources will be created"
+  type        = string
+  default     = "us-east-2"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]+$", var.aws_region))
+    error_message = "aws_region must look like a valid AWS region, such as us-east-2."
+  }
+}
+
+variable "ami_id" {
+  description = "AMI ID to launch for the example web server"
+  type        = string
+  default     = "ami-0c55b159cbfafe1f0"
+
+  validation {
+    condition     = can(regex("^ami-[0-9a-f]+$", var.ami_id))
+    error_message = "ami_id must look like an AWS AMI ID, such as ami-0c55b159cbfafe1f0."
+  }
+}
+
 variable "server_port" {
   description = "The port the server will use for HTTP requests"
   type        = number
