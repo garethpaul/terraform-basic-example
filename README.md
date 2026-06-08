@@ -70,4 +70,4 @@ Keep changes small and tied to the project that is already present in this repos
 
 Prior README summary:
 
-> Terraform Example <!-- README-OVERVIEW-IMAGE --> This is a basic example that builds a single webserver using Terraform and outputs "Hello World"
+> Terraform Example This is a basic example that builds a single webserver using Terraform and outputs "Hello World"
