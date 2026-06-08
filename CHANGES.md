@@ -13,3 +13,5 @@
 - Declared the AWS provider source/version requirement.
 - Added validation for `server_port` and made ingress CIDR blocks configurable.
 - Documented the local verification workflow.
+- Added canonical `docs/plans` coverage and made hygiene checks require
+  completed plans.

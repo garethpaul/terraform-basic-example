@@ -12,7 +12,15 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 ## Repository Contents
 
 - `README.md` - project overview and local usage notes
+- `CHANGES.md` - maintenance history for Terraform guardrails
+- `Makefile` - local verification entry points
+- `docs/plans` - completed maintenance plans for the current baseline
+- `main.tf` - Terraform provider and resource configuration
+- `outputs.tf` - Terraform outputs
+- `plans` - historical implementation notes
+- `scripts` - static Terraform hygiene and configuration validators
 - `SECURITY.md` - security reporting and disclosure guidance
+- `variables.tf` - validated Terraform input variables
 - `VISION.md` - project direction and maintenance guardrails
 
 Additional scan context:
@@ -55,6 +63,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   `terraform init -backend=false`, and `terraform validate`.
 - Static checks require configurable region, AMI, ingress CIDR, and server port
   validation instead of editing literals in `main.tf`.
+- Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -70,6 +79,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-08-terraform-basic-example-baseline.md` for the
+  canonical Terraform hygiene and configuration baseline.
 
 ## Contributing
 

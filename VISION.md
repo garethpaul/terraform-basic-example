@@ -18,6 +18,7 @@ Priority:
 - Keep Terraform version assumptions visible
 - Make AWS region, AMI, and open ingress explicit and configurable
 - Avoid committing credentials or local state files
+- Keep completed maintenance plans under `docs/plans`
 
 Next priorities:
 
