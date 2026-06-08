@@ -2,6 +2,7 @@
 
 ## 2026-06-08
 
+- Added `make check` as the shared repository verification alias.
 - Parameterized the AWS provider region and EC2 AMI ID with validated
   variables.
 - Extended the static config checker to reject hardcoded provider region and

@@ -50,7 +50,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `make verify` runs static Terraform hygiene/configuration checks. When
+- `make check` runs static Terraform hygiene/configuration checks. When
   `terraform` is installed, the `build` target also runs `terraform fmt -check`,
   `terraform init -backend=false`, and `terraform validate`.
 - Static checks require configurable region, AMI, ingress CIDR, and server port
