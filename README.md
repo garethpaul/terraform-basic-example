@@ -28,6 +28,7 @@ Additional scan context:
 
 - Git
 - Terraform
+- Python 3 for static repository checks
 
 ### Setup
 
@@ -42,10 +43,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Running or Using the Project
 
 - Use `terraform plan` after `terraform init` to inspect infrastructure changes before applying anything.
+- Override `allowed_cidr_blocks` before real use if the example web server
+  should not be reachable from the public internet.
 
 ## Testing and Verification
 
-- No dedicated automated test command was identified from the checked-in files. Verify changes by running the relevant build or manually exercising the sample.
+- `make verify` runs static Terraform hygiene/configuration checks. When
+  `terraform` is installed, the `build` target also runs `terraform fmt -check`,
+  `terraform init -backend=false`, and `terraform validate`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
