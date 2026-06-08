@@ -38,7 +38,7 @@ Contribution rules:
 The example creates public cloud resources and opens inbound HTTP. Users should
 understand credentials, costs, public exposure, and teardown before applying it.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Checked-in Terraform state or credentials
 - Broad AWS architectures beyond the basic example
