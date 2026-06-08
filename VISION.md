@@ -44,3 +44,6 @@ understand credentials, costs, public exposure, and teardown before applying it.
 - Broad AWS architectures beyond the basic example
 - Open management ports
 - Cost-increasing resources without explicit rationale
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
