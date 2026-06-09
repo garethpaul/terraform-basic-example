@@ -11,6 +11,7 @@ DOCS_PLANS = ROOT / "docs" / "plans"
 CANONICAL_PLAN = DOCS_PLANS / "2026-06-08-terraform-basic-example-baseline.md"
 SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
 INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
+RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 
 
 def read_text(relative_path):
@@ -30,6 +31,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-09-security-group-metadata.md is missing")
     if not INSTANCE_TYPE_SYNTAX_PLAN.exists():
         errors.append("docs/plans/2026-06-09-instance-type-syntax.md is missing")
+    if not RESOURCE_TAGS_PLAN.exists():
+        errors.append("docs/plans/2026-06-09-resource-tags.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -78,7 +81,11 @@ def config_checks():
         errors.append("security group must describe the example web server access")
     if 'description = "HTTP access to the example web server"' not in main:
         errors.append("security group ingress must describe the exposed HTTP rule")
-    if 'tags = {\n    Name = "terraform-example-instance"\n  }' not in main:
+    if main.count("tags = merge(var.resource_tags, {") < 2:
+        errors.append("EC2 instance and security group must merge common resource tags")
+    if 'Name = "terraform-example"' not in main:
+        errors.append("EC2 instance must carry a Name tag")
+    if 'Name = "terraform-example-instance"' not in main:
         errors.append("security group must carry a Name tag")
     if 'variable "allowed_cidr_blocks"' not in variables:
         errors.append("variables.tf must define allowed_cidr_blocks")
@@ -92,6 +99,12 @@ def config_checks():
         errors.append("variables.tf must define and validate instance_type")
     if 'can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))' not in variables:
         errors.append("instance_type must validate EC2 instance type syntax")
+    if 'variable "resource_tags"' not in variables:
+        errors.append("variables.tf must define common resource_tags")
+    if "type        = map(string)" not in variables:
+        errors.append("resource_tags must be a string map")
+    if 'ManagedBy = "terraform"' not in variables or 'Project   = "terraform-basic-example"' not in variables:
+        errors.append("resource_tags must include default ownership tags")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):

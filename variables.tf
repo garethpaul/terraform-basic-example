@@ -70,3 +70,12 @@ variable "allowed_cidr_blocks" {
     error_message = "allowed_cidr_blocks must contain one or more valid CIDR blocks."
   }
 }
+
+variable "resource_tags" {
+  description = "Common tags applied to example resources for ownership and cleanup"
+  type        = map(string)
+  default = {
+    ManagedBy = "terraform"
+    Project   = "terraform-basic-example"
+  }
+}

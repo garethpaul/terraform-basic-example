@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added common `resource_tags` and static checks so the EC2 instance and
+  security group carry ownership/cleanup metadata.
 - Tightened `instance_type` variable validation so obvious non-EC2-looking
   values fail before provider planning.
 - Added security group and ingress descriptions plus a `Name` tag so the demo

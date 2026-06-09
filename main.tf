@@ -53,9 +53,9 @@ resource "aws_instance" "example" {
     encrypted = true
   }
 
-  tags = {
+  tags = merge(var.resource_tags, {
     Name = "terraform-example"
-  }
+  })
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ resource "aws_security_group" "instance" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
-  tags = {
+  tags = merge(var.resource_tags, {
     Name = "terraform-example-instance"
-  }
+  })
 }

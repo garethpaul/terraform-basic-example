@@ -70,7 +70,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   tokens and a one-hop metadata response limit, the root block device to be
   encrypted, and user-data edits to replace the demo instance. Security group
   checks require descriptions and a `Name` tag so AWS plans show the rule
-  intent.
+  intent. Resource checks also require shared ownership tags to be merged into
+  the EC2 instance and security group.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -105,6 +106,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   replacement guard.
 - See `docs/plans/2026-06-09-security-group-metadata.md` for the security group
   description and tag guard.
+- See `docs/plans/2026-06-09-resource-tags.md` for the shared resource
+  ownership tag guard.
 
 ## Contributing
 
