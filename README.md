@@ -51,8 +51,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Running or Using the Project
 
 - Use `terraform plan` after `terraform init` to inspect infrastructure changes before applying anything.
-- Override `aws_region` and `ami_id` when planning outside the sample defaults;
-  AMI IDs are region-specific.
+- Override `aws_region`, `ami_id`, and `instance_type` when planning outside
+  the sample defaults; AMI IDs are region-specific and instance type changes
+  can affect cost.
 - Override `allowed_cidr_blocks` before real use if the example web server
   should not be reachable from the public internet. Values must be valid CIDR
   blocks.
@@ -62,10 +63,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make check` runs static Terraform hygiene/configuration checks. When
   `terraform` is installed, the `build` target also runs `terraform fmt -check`,
   `terraform init -backend=false`, and `terraform validate`.
-- Static checks require configurable region, AMI, ingress CIDR syntax, and
-  server port validation instead of editing literals in `main.tf`. They also
-  require the EC2 instance metadata service to use IMDSv2 tokens and the root
-  block device to be encrypted.
+- Static checks require configurable region, AMI, instance type, ingress CIDR
+  syntax, and server port validation instead of editing literals in `main.tf`.
+  They also require the EC2 instance metadata service to use IMDSv2 tokens and
+  the root block device to be encrypted.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -90,6 +91,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   guard.
 - See `docs/plans/2026-06-09-root-volume-encryption.md` for the root volume
   encryption guard.
+- See `docs/plans/2026-06-09-configurable-instance-type.md` for the EC2
+  instance type variable guard.
 
 ## Contributing
 

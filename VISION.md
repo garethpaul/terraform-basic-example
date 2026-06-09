@@ -16,7 +16,7 @@ Priority:
 
 - Preserve the single-instance web server example
 - Keep Terraform version assumptions visible
-- Make AWS region, AMI, and open ingress explicit and configurable
+- Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate ingress CIDR inputs before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance
 - Keep the example instance root volume explicitly encrypted

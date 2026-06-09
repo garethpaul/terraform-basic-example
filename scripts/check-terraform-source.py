@@ -60,6 +60,10 @@ def config_checks():
         errors.append("instance AMI must be configurable")
     if "ami                    = var.ami_id" not in main:
         errors.append("instance AMI must reference var.ami_id")
+    if re.search(r'instance_type\s+=\s+"[^"]+"', main):
+        errors.append("instance type must be configurable")
+    if not re.search(r'instance_type\s+=\s+var\.instance_type', main):
+        errors.append("instance type must reference var.instance_type")
     if 'cidr_blocks = ["0.0.0.0/0"]' in main:
         errors.append("security group ingress must use configurable CIDR blocks")
     if "cidr_blocks = var.allowed_cidr_blocks" not in main:
@@ -72,6 +76,8 @@ def config_checks():
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:
         errors.append("variables.tf must define and validate ami_id")
+    if 'variable "instance_type"' not in variables or "var.instance_type" not in variables:
+        errors.append("variables.tf must define and validate instance_type")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "metadata_options" not in main or 'http_tokens = "required"' not in main:

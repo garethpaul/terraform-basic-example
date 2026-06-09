@@ -32,6 +32,17 @@ variable "ami_id" {
   }
 }
 
+variable "instance_type" {
+  description = "EC2 instance type for the example web server"
+  type        = string
+  default     = "t2.micro"
+
+  validation {
+    condition     = length(trimspace(var.instance_type)) > 0
+    error_message = "instance_type must not be empty."
+  }
+}
+
 variable "server_port" {
   description = "The port the server will use for HTTP requests"
   type        = number

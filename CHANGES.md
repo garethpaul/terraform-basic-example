@@ -2,6 +2,10 @@
 
 ## 2026-06-09
 
+- Moved the EC2 instance type into a validated `instance_type` variable while
+  keeping the `t2.micro` default.
+- Extended static configuration checks to reject hardcoded instance type
+  literals in `main.tf`.
 - Enabled encryption on the EC2 instance root block device.
 - Extended static Terraform checks to require root volume encryption.
 

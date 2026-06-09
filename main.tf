@@ -34,7 +34,7 @@ provider "aws" {
 resource "aws_instance" "example" {
   # Default AMI is Ubuntu Server 18.04 LTS in us-east-2; override ami_id for other regions.
   ami                    = var.ami_id
-  instance_type          = "t2.micro"
+  instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.instance.id]
 
   user_data = <<-EOF
