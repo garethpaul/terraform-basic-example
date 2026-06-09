@@ -19,6 +19,7 @@ Priority:
 - Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate ingress CIDR inputs before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance
+- Keep EC2 metadata response hop limits explicit for the single-instance demo
 - Keep the example instance root volume explicitly encrypted
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
@@ -51,6 +52,7 @@ understand credentials, costs, public exposure, and teardown before applying it.
 - Checked-in Terraform state or credentials
 - Broad AWS architectures beyond the basic example
 - Open management ports
+- Loose EC2 metadata response hop limits without rationale
 - Unencrypted EC2 root volumes
 - Cost-increasing resources without explicit rationale
 

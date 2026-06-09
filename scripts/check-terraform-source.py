@@ -80,8 +80,10 @@ def config_checks():
         errors.append("variables.tf must define and validate instance_type")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
-    if "metadata_options" not in main or 'http_tokens = "required"' not in main:
+    if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
+    if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):
+        errors.append("aws_instance.example must limit metadata response hops to 1")
     if "root_block_device" not in main or "encrypted = true" not in main:
         errors.append("aws_instance.example root block device must be encrypted")
 

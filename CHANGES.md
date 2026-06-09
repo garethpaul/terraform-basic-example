@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Limited EC2 instance metadata responses to one hop and added static guard
+  coverage.
 - Moved the EC2 instance type into a validated `instance_type` variable while
   keeping the `t2.micro` default.
 - Extended static configuration checks to reject hardcoded instance type

@@ -66,7 +66,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   They also require the EC2 instance metadata service to use IMDSv2 tokens and
-  the root block device to be encrypted.
+  a one-hop metadata response limit, and the root block device to be encrypted.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -89,6 +89,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   coverage.
 - See `docs/plans/2026-06-08-imdsv2-required.md` for the EC2 metadata token
   guard.
+- See `docs/plans/2026-06-09-metadata-hop-limit.md` for the EC2 metadata hop
+  limit guard.
 - See `docs/plans/2026-06-09-root-volume-encryption.md` for the root volume
   encryption guard.
 - See `docs/plans/2026-06-09-configurable-instance-type.md` for the EC2

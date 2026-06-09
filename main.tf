@@ -44,7 +44,8 @@ resource "aws_instance" "example" {
               EOF
 
   metadata_options {
-    http_tokens = "required"
+    http_put_response_hop_limit = 1
+    http_tokens                 = "required"
   }
 
   root_block_device {
