@@ -22,6 +22,7 @@ Priority:
 - Keep EC2 metadata response hop limits explicit for the single-instance demo
 - Keep the example instance root volume explicitly encrypted
 - Replace the demo instance when its launch-time user data changes
+- Keep security group purpose visible in AWS plans and tags
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 

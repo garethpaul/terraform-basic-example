@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS_PLANS = ROOT / "docs" / "plans"
 CANONICAL_PLAN = DOCS_PLANS / "2026-06-08-terraform-basic-example-baseline.md"
+SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
 
 
 def read_text(relative_path):
@@ -24,6 +25,8 @@ def hygiene_checks():
     errors = []
     if not CANONICAL_PLAN.exists():
         errors.append("docs/plans/2026-06-08-terraform-basic-example-baseline.md is missing")
+    if not SECURITY_GROUP_PLAN.exists():
+        errors.append("docs/plans/2026-06-09-security-group-metadata.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -68,6 +71,12 @@ def config_checks():
         errors.append("security group ingress must use configurable CIDR blocks")
     if "cidr_blocks = var.allowed_cidr_blocks" not in main:
         errors.append("security group ingress must reference var.allowed_cidr_blocks")
+    if 'description = "Allow HTTP access to the Terraform example web server"' not in main:
+        errors.append("security group must describe the example web server access")
+    if 'description = "HTTP access to the example web server"' not in main:
+        errors.append("security group ingress must describe the exposed HTTP rule")
+    if 'tags = {\n    Name = "terraform-example-instance"\n  }' not in main:
+        errors.append("security group must carry a Name tag")
     if 'variable "allowed_cidr_blocks"' not in variables:
         errors.append("variables.tf must define allowed_cidr_blocks")
     if "var.allowed_cidr_blocks" not in variables or "cidrhost(cidr, 0)" not in variables:
