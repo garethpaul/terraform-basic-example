@@ -66,6 +66,8 @@ def config_checks():
         errors.append("security group ingress must reference var.allowed_cidr_blocks")
     if 'variable "allowed_cidr_blocks"' not in variables:
         errors.append("variables.tf must define allowed_cidr_blocks")
+    if "var.allowed_cidr_blocks" not in variables or "cidrhost(cidr, 0)" not in variables:
+        errors.append("allowed_cidr_blocks must validate CIDR values")
     if 'variable "aws_region"' not in variables or "var.aws_region" not in variables:
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:

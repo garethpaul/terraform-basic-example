@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Added validation for `allowed_cidr_blocks` and static checker coverage for
+  ingress CIDR syntax.
 - Added `make check` as the shared repository verification alias.
 - Parameterized the AWS provider region and EC2 AMI ID with validated
   variables.

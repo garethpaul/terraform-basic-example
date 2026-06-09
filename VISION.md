@@ -17,6 +17,7 @@ Priority:
 - Preserve the single-instance web server example
 - Keep Terraform version assumptions visible
 - Make AWS region, AMI, and open ingress explicit and configurable
+- Validate ingress CIDR inputs before Terraform plans reach AWS
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 

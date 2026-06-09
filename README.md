@@ -54,15 +54,16 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Override `aws_region` and `ami_id` when planning outside the sample defaults;
   AMI IDs are region-specific.
 - Override `allowed_cidr_blocks` before real use if the example web server
-  should not be reachable from the public internet.
+  should not be reachable from the public internet. Values must be valid CIDR
+  blocks.
 
 ## Testing and Verification
 
 - `make check` runs static Terraform hygiene/configuration checks. When
   `terraform` is installed, the `build` target also runs `terraform fmt -check`,
   `terraform init -backend=false`, and `terraform validate`.
-- Static checks require configurable region, AMI, ingress CIDR, and server port
-  validation instead of editing literals in `main.tf`.
+- Static checks require configurable region, AMI, ingress CIDR syntax, and
+  server port validation instead of editing literals in `main.tf`.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -81,6 +82,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-08-terraform-basic-example-baseline.md` for the
   canonical Terraform hygiene and configuration baseline.
+- See `docs/plans/2026-06-08-cidr-validation.md` for ingress CIDR validation
+  coverage.
 
 ## Contributing
 

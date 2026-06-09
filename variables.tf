@@ -47,4 +47,15 @@ variable "allowed_cidr_blocks" {
   description = "CIDR blocks allowed to reach the example web server"
   type        = list(string)
   default     = ["0.0.0.0/0"]
+
+  validation {
+    condition = (
+      length(var.allowed_cidr_blocks) > 0 &&
+      length([
+        for cidr in var.allowed_cidr_blocks : cidr
+        if can(cidrhost(cidr, 0))
+      ]) == length(var.allowed_cidr_blocks)
+    )
+    error_message = "allowed_cidr_blocks must contain one or more valid CIDR blocks."
+  }
 }
