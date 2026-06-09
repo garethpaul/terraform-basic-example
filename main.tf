@@ -43,6 +43,10 @@ resource "aws_instance" "example" {
               nohup busybox httpd -f -p "${var.server_port}" &
               EOF
 
+  metadata_options {
+    http_tokens = "required"
+  }
+
   tags = {
     Name = "terraform-example"
   }

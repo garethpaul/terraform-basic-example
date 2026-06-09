@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Required IMDSv2 tokens on the EC2 example and added static checker coverage.
+- Ignored Python bytecode caches produced by local checker syntax validation.
 - Added validation for `allowed_cidr_blocks` and static checker coverage for
   ingress CIDR syntax.
 - Added `make check` as the shared repository verification alias.

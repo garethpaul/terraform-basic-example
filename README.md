@@ -63,7 +63,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   `terraform` is installed, the `build` target also runs `terraform fmt -check`,
   `terraform init -backend=false`, and `terraform validate`.
 - Static checks require configurable region, AMI, ingress CIDR syntax, and
-  server port validation instead of editing literals in `main.tf`.
+  server port validation instead of editing literals in `main.tf`. They also
+  require the EC2 instance metadata service to use IMDSv2 tokens.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -84,6 +85,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   canonical Terraform hygiene and configuration baseline.
 - See `docs/plans/2026-06-08-cidr-validation.md` for ingress CIDR validation
   coverage.
+- See `docs/plans/2026-06-08-imdsv2-required.md` for the EC2 metadata token
+  guard.
 
 ## Contributing
 

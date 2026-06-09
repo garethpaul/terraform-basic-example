@@ -74,6 +74,8 @@ def config_checks():
         errors.append("variables.tf must define and validate ami_id")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
+    if "metadata_options" not in main or 'http_tokens = "required"' not in main:
+        errors.append("aws_instance.example must require IMDSv2 with http_tokens")
 
     return errors
 

@@ -18,6 +18,7 @@ Priority:
 - Keep Terraform version assumptions visible
 - Make AWS region, AMI, and open ingress explicit and configurable
 - Validate ingress CIDR inputs before Terraform plans reach AWS
+- Require IMDSv2 tokens on the example EC2 instance
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 
