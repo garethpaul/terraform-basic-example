@@ -76,6 +76,8 @@ def config_checks():
         errors.append("server_port must include Terraform variable validation")
     if "metadata_options" not in main or 'http_tokens = "required"' not in main:
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
+    if "root_block_device" not in main or "encrypted = true" not in main:
+        errors.append("aws_instance.example root block device must be encrypted")
 
     return errors
 

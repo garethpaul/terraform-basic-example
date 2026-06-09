@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Enabled encryption on the EC2 instance root block device.
+- Extended static Terraform checks to require root volume encryption.
+
 ## 2026-06-08
 
 - Required IMDSv2 tokens on the EC2 example and added static checker coverage.

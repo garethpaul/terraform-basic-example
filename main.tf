@@ -47,6 +47,10 @@ resource "aws_instance" "example" {
     http_tokens = "required"
   }
 
+  root_block_device {
+    encrypted = true
+  }
+
   tags = {
     Name = "terraform-example"
   }
