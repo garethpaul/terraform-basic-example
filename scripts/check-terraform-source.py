@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS_PLANS = ROOT / "docs" / "plans"
 CANONICAL_PLAN = DOCS_PLANS / "2026-06-08-terraform-basic-example-baseline.md"
 SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
+INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
 
 
 def read_text(relative_path):
@@ -27,6 +28,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-08-terraform-basic-example-baseline.md is missing")
     if not SECURITY_GROUP_PLAN.exists():
         errors.append("docs/plans/2026-06-09-security-group-metadata.md is missing")
+    if not INSTANCE_TYPE_SYNTAX_PLAN.exists():
+        errors.append("docs/plans/2026-06-09-instance-type-syntax.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -87,6 +90,8 @@ def config_checks():
         errors.append("variables.tf must define and validate ami_id")
     if 'variable "instance_type"' not in variables or "var.instance_type" not in variables:
         errors.append("variables.tf must define and validate instance_type")
+    if 'can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))' not in variables:
+        errors.append("instance_type must validate EC2 instance type syntax")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):

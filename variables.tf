@@ -38,8 +38,8 @@ variable "instance_type" {
   default     = "t2.micro"
 
   validation {
-    condition     = length(trimspace(var.instance_type)) > 0
-    error_message = "instance_type must not be empty."
+    condition     = can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))
+    error_message = "instance_type must look like an EC2 instance type, such as t2.micro."
   }
 }
 

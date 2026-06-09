@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Tightened `instance_type` variable validation so obvious non-EC2-looking
+  values fail before provider planning.
 - Added security group and ingress descriptions plus a `Name` tag so the demo
   network exposure is visible in Terraform plans and AWS.
 - Made EC2 user-data edits replace the demo instance and added static guard
