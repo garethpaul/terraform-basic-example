@@ -86,6 +86,8 @@ def config_checks():
         errors.append("aws_instance.example must limit metadata response hops to 1")
     if "root_block_device" not in main or "encrypted = true" not in main:
         errors.append("aws_instance.example root block device must be encrypted")
+    if not re.search(r'user_data_replace_on_change\s+=\s+true', main):
+        errors.append("aws_instance.example must replace on user_data changes")
 
     return errors
 

@@ -21,6 +21,7 @@ Priority:
 - Require IMDSv2 tokens on the example EC2 instance
 - Keep EC2 metadata response hop limits explicit for the single-instance demo
 - Keep the example instance root volume explicitly encrypted
+- Replace the demo instance when its launch-time user data changes
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 

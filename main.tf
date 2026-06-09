@@ -42,6 +42,7 @@ resource "aws_instance" "example" {
               echo "Hello, World" > index.html
               nohup busybox httpd -f -p "${var.server_port}" &
               EOF
+  user_data_replace_on_change = true
 
   metadata_options {
     http_put_response_hop_limit = 1

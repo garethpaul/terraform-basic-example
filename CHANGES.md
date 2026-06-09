@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Made EC2 user-data edits replace the demo instance and added static guard
+  coverage.
 - Limited EC2 instance metadata responses to one hop and added static guard
   coverage.
 - Moved the EC2 instance type into a validated `instance_type` variable while
