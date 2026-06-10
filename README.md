@@ -13,6 +13,8 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 - `README.md` - project overview and local usage notes
 - `CHANGES.md` - maintenance history for Terraform guardrails
+- `.github/workflows/check.yml` - GitHub Actions baseline for `make check`
+- `.terraform.lock.hcl` - reproducible AWS provider selection and checksums
 - `Makefile` - local verification entry points
 - `docs/plans` - completed maintenance plans for the current baseline
 - `main.tf` - Terraform provider and resource configuration
@@ -35,7 +37,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Terraform
+- Terraform 1.5 or newer in the 1.x release line
 - Python 3 for static repository checks
 
 ### Setup
@@ -73,6 +75,13 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   intent. Resource checks also require shared ownership tags to be merged into
   the EC2 instance and security group.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
+- GitHub Actions runs the same `make check` baseline on pushes and pull
+  requests with Terraform 1.15.5, so formatting, provider initialization, and
+  configuration validation are required in CI. The workflow uses read-only
+  repository permissions, a ten-minute timeout, and commit-pinned Node 24
+  actions.
+- `main.tf` constrains Terraform to supported 1.x releases and the AWS provider
+  to 6.x. Commit `.terraform.lock.hcl` updates when changing provider versions.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -108,6 +117,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   description and tag guard.
 - See `docs/plans/2026-06-09-resource-tags.md` for the shared resource
   ownership tag guard.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the reproducible Terraform
+  validation gate.
 
 ## Contributing
 

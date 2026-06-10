@@ -1,5 +1,15 @@
 # Changes
 
+## 2026-06-10
+
+- Added a least-privilege GitHub Actions workflow that runs `make check` with
+  Terraform 1.15.5 and commit-pinned Node 24 actions.
+- Constrained Terraform to supported 1.x releases and the AWS provider to 6.x,
+  with a checked-in provider lockfile for reproducible initialization.
+- Made the Makefile's Terraform validation chain stop on the first failed
+  formatting, initialization, or validation command.
+- Extended hygiene checks to require the CI workflow and completed CI plan.
+
 ## 2026-06-09
 
 - Added common `resource_tags` and static checks so the EC2 instance and

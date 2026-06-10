@@ -27,6 +27,7 @@ Priority:
 - Keep common ownership tags on demo resources for cleanup traceability
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
+- Keep reproducible Terraform initialization and validation running in GitHub Actions
 
 Next priorities:
 

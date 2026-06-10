@@ -26,7 +26,11 @@ Helpful reports include:
 
 - This repository appears to be an Infrastructure-as-code example. The active security scope is the code and documentation on the default branch.
 - Review found infrastructure, deployment, proxy, or cloud configuration; changes in those areas should receive security-focused review before merge.
-- No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
+- Provider selections and checksums are committed in `.terraform.lock.hcl`;
+  review lockfile changes alongside the corresponding version constraint.
+- GitHub Actions runs `make check` with Terraform 1.15.5, read-only repository
+  permissions, a ten-minute timeout, and commit-pinned Node 24 actions; review
+  workflow and checker changes alongside Terraform configuration changes.
 
 ## Infrastructure Notes
 

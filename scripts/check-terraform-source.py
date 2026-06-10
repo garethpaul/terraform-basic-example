@@ -12,6 +12,9 @@ CANONICAL_PLAN = DOCS_PLANS / "2026-06-08-terraform-basic-example-baseline.md"
 SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
 INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
 RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
+CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
+LOCK_FILE = ROOT / ".terraform.lock.hcl"
 
 
 def read_text(relative_path):
@@ -33,6 +36,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-09-instance-type-syntax.md is missing")
     if not RESOURCE_TAGS_PLAN.exists():
         errors.append("docs/plans/2026-06-09-resource-tags.md is missing")
+    if not CI_PLAN.exists():
+        errors.append("docs/plans/2026-06-10-ci-baseline.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -51,6 +56,40 @@ def hygiene_checks():
         if path.endswith(".tfstate") or ".tfstate." in path or path.endswith(".tfvars"):
             errors.append(f"state or local variable file must not be tracked: {path}")
 
+    if not CI_WORKFLOW.exists():
+        errors.append(".github/workflows/check.yml is missing")
+    else:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        for fragment in (
+            "permissions:",
+            "contents: read",
+            "workflow_dispatch:",
+            "timeout-minutes: 10",
+            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+            "hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e",
+            'python-version: "3.12"',
+            'terraform_version: "1.15.5"',
+            "run: make check",
+        ):
+            if fragment not in workflow:
+                errors.append(f"CI workflow is missing expected fragment: {fragment}")
+
+    if not LOCK_FILE.exists():
+        errors.append(".terraform.lock.hcl is missing")
+    else:
+        lock_file = LOCK_FILE.read_text(encoding="utf-8")
+        if 'provider "registry.terraform.io/hashicorp/aws"' not in lock_file:
+            errors.append(".terraform.lock.hcl must pin the hashicorp/aws provider")
+
+    readme = read_text("README.md")
+    if "GitHub Actions" not in readme:
+        errors.append("README must document the GitHub Actions check")
+
+    makefile = read_text("Makefile")
+    if 'set -e;' not in makefile:
+        errors.append("Makefile Terraform validation must fail immediately when a command fails")
+
     return errors
 
 
@@ -59,8 +98,12 @@ def config_checks():
     main = read_text("main.tf")
     variables = read_text("variables.tf")
 
+    if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
+        errors.append("main.tf must constrain Terraform to the supported 1.x range")
     if "required_providers" not in main or 'source  = "hashicorp/aws"' not in main:
         errors.append("main.tf must declare the hashicorp/aws provider source")
+    if 'version = ">= 6.0.0, < 7.0.0"' not in main:
+        errors.append("main.tf must constrain the AWS provider to the supported 6.x range")
     if 'region = "us-east-2"' in main:
         errors.append("provider region must be configurable")
     if "region = var.aws_region" not in main:

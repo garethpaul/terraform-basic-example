@@ -11,6 +11,7 @@ test:
 
 build: lint
 	@if command -v "$(TERRAFORM)" >/dev/null 2>&1; then \
+		set -e; \
 		"$(TERRAFORM)" fmt -check; \
 		"$(TERRAFORM)" init -backend=false; \
 		"$(TERRAFORM)" validate; \
