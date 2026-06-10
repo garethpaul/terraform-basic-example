@@ -19,6 +19,7 @@ Priority:
 - Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate instance type overrides before provider planning
 - Validate ingress CIDR inputs before Terraform plans reach AWS
+- Validate server ports as whole numbers before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance
 - Keep EC2 metadata response hop limits explicit for the single-instance demo
 - Keep the example instance root volume explicitly encrypted

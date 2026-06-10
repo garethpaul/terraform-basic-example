@@ -34,6 +34,8 @@ Helpful reports include:
   permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout, concurrency
   cancellation, and commit-pinned Node 24 actions; review workflow and checker
   changes alongside Terraform configuration changes.
+- Mocked Terraform tests reject fractional listener ports before invalid user
+  data or security-group values can reach an AWS plan.
 
 ## Infrastructure Notes
 

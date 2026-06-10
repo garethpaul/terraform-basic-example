@@ -49,8 +49,12 @@ variable "server_port" {
   default     = 8080
 
   validation {
-    condition     = var.server_port > 0 && var.server_port < 65536
-    error_message = "server_port must be between 1 and 65535."
+    condition = (
+      var.server_port > 0 &&
+      var.server_port < 65536 &&
+      var.server_port == floor(var.server_port)
+    )
+    error_message = "server_port must be a whole number between 1 and 65535."
   }
 }
 

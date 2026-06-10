@@ -65,8 +65,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make check` runs static Terraform hygiene/configuration checks. When
   `terraform` is installed, the `build` target also runs `terraform fmt
   -check -diff`, `terraform init -backend=false -lockfile=readonly`, and
-  `terraform validate -no-color`. The Makefile resolves paths from its own
-  location, so the same check can be invoked from outside the repository.
+  `terraform validate -no-color`, followed by mocked `terraform test
+  -no-color` plans. The Makefile resolves paths from its own location, so the
+  same check can be invoked from outside the repository.
+- Native Terraform tests prove the default server port plans successfully and
+  reject fractional port values before user data or security groups reach AWS.
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   Instance type validation requires EC2-shaped values such as `t2.micro`.
@@ -126,6 +129,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   validation gate.
 - See `docs/plans/2026-06-10-readonly-provider-lock.md` for immutable provider
   lock enforcement.
+- See `docs/plans/2026-06-10-server-port-integer-test.md` for whole-number port
+  validation and the mocked Terraform plan test.
 
 ## Contributing
 

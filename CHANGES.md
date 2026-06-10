@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Rejected fractional server ports and added mocked native Terraform plan tests
+  for accepted defaults and expected variable-validation failures.
 - Made Terraform validation independent of the caller's working directory and
   enforced read-only provider initialization, formatting diffs, and stable
   non-color validation output.

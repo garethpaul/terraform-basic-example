@@ -17,6 +17,7 @@ build: lint
 		"$(TERRAFORM)" fmt -check -diff; \
 		"$(TERRAFORM)" init -backend=false -lockfile=readonly; \
 		"$(TERRAFORM)" validate -no-color; \
+		"$(TERRAFORM)" test -no-color; \
 	else \
 		echo "terraform not found; static Terraform checks completed"; \
 	fi

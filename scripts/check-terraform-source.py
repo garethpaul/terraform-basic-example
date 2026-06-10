@@ -14,8 +14,10 @@ INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
 RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
 LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
+SERVER_PORT_TEST_PLAN = DOCS_PLANS / "2026-06-10-server-port-integer-test.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
+SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
 
 
 def read_text(relative_path):
@@ -41,6 +43,10 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-10-ci-baseline.md is missing")
     if not LOCK_ENFORCEMENT_PLAN.exists():
         errors.append("docs/plans/2026-06-10-readonly-provider-lock.md is missing")
+    if not SERVER_PORT_TEST_PLAN.exists():
+        errors.append("docs/plans/2026-06-10-server-port-integer-test.md is missing")
+    if not SERVER_PORT_TEST.exists():
+        errors.append("tests/server_port.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -113,6 +119,7 @@ def hygiene_checks():
         "fmt -check -diff",
         "init -backend=false -lockfile=readonly",
         "validate -no-color",
+        "test -no-color",
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
@@ -124,6 +131,7 @@ def config_checks():
     errors = []
     main = read_text("main.tf")
     variables = read_text("variables.tf")
+    server_port_test = read_text("tests/server_port.tftest.hcl") if SERVER_PORT_TEST.exists() else ""
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -177,6 +185,17 @@ def config_checks():
         errors.append("resource_tags must include default ownership tags")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
+    if "var.server_port == floor(var.server_port)" not in variables:
+        errors.append("server_port must reject fractional port values")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_server_port"',
+        'run "reject_fractional_server_port"',
+        "server_port = 8080.5",
+        "expect_failures = [var.server_port]",
+    ):
+        if fragment not in server_port_test:
+            errors.append(f"server port Terraform test is missing contract: {fragment}")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):
