@@ -13,6 +13,7 @@ SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
 INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
 RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
+LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 
@@ -38,6 +39,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-09-resource-tags.md is missing")
     if not CI_PLAN.exists():
         errors.append("docs/plans/2026-06-10-ci-baseline.md is missing")
+    if not LOCK_ENFORCEMENT_PLAN.exists():
+        errors.append("docs/plans/2026-06-10-readonly-provider-lock.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -64,10 +67,13 @@ def hygiene_checks():
             "permissions:",
             "contents: read",
             "workflow_dispatch:",
+            "concurrency:",
+            "cancel-in-progress: true",
+            "runs-on: ubuntu-24.04",
             "timeout-minutes: 10",
-            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
-            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
-            "hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e",
+            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3",
+            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0",
+            "hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1",
             'python-version: "3.12"',
             'terraform_version: "1.15.5"',
             "run: make check",
@@ -81,6 +87,18 @@ def hygiene_checks():
         lock_file = LOCK_FILE.read_text(encoding="utf-8")
         if 'provider "registry.terraform.io/hashicorp/aws"' not in lock_file:
             errors.append(".terraform.lock.hcl must pin the hashicorp/aws provider")
+        if 'version     = "6.49.0"' not in lock_file:
+            errors.append(".terraform.lock.hcl must select the reviewed AWS provider 6.49.0")
+        if 'constraints = ">= 6.0.0, < 7.0.0"' not in lock_file:
+            errors.append(
+                ".terraform.lock.hcl must preserve the reviewed AWS provider constraint"
+            )
+        if not re.search(r'^\s+"h1:[A-Za-z0-9+/=]+",$', lock_file, re.MULTILINE):
+            errors.append(
+                ".terraform.lock.hcl must include a canonical provider package checksum"
+            )
+        if len(re.findall(r'^\s+"zh:[0-9a-f]{64}",$', lock_file, re.MULTILINE)) < 10:
+            errors.append(".terraform.lock.hcl must include registry checksums for supported platforms")
 
     readme = read_text("README.md")
     if "GitHub Actions" not in readme:
@@ -89,6 +107,15 @@ def hygiene_checks():
     makefile = read_text("Makefile")
     if 'set -e;' not in makefile:
         errors.append("Makefile Terraform validation must fail immediately when a command fails")
+    for fragment in (
+        "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))",
+        'cd "$(ROOT)";',
+        "fmt -check -diff",
+        "init -backend=false -lockfile=readonly",
+        "validate -no-color",
+    ):
+        if fragment not in makefile:
+            errors.append(f"Makefile is missing expected validation fragment: {fragment}")
 
     return errors
 

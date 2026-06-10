@@ -63,8 +63,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Testing and Verification
 
 - `make check` runs static Terraform hygiene/configuration checks. When
-  `terraform` is installed, the `build` target also runs `terraform fmt -check`,
-  `terraform init -backend=false`, and `terraform validate`.
+  `terraform` is installed, the `build` target also runs `terraform fmt
+  -check -diff`, `terraform init -backend=false -lockfile=readonly`, and
+  `terraform validate -no-color`. The Makefile resolves paths from its own
+  location, so the same check can be invoked from outside the repository.
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   Instance type validation requires EC2-shaped values such as `t2.micro`.
@@ -78,10 +80,13 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - GitHub Actions runs the same `make check` baseline on pushes and pull
   requests with Terraform 1.15.5, so formatting, provider initialization, and
   configuration validation are required in CI. The workflow uses read-only
-  repository permissions, a ten-minute timeout, and commit-pinned Node 24
-  actions.
+  repository permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout,
+  concurrency cancellation, and commit-pinned Node 24 actions.
 - `main.tf` constrains Terraform to supported 1.x releases and the AWS provider
-  to 6.x. Commit `.terraform.lock.hcl` updates when changing provider versions.
+  to 6.x. The validation gate treats `.terraform.lock.hcl` as read-only and
+  currently requires the reviewed AWS provider 6.49.0 selection and registry
+  checksums. Update the lockfile and static contract together when changing
+  provider versions.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -119,6 +124,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ownership tag guard.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the reproducible Terraform
   validation gate.
+- See `docs/plans/2026-06-10-readonly-provider-lock.md` for immutable provider
+  lock enforcement.
 
 ## Contributing
 

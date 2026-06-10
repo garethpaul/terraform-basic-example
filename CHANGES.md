@@ -2,6 +2,14 @@
 
 ## 2026-06-10
 
+- Made Terraform validation independent of the caller's working directory and
+  enforced read-only provider initialization, formatting diffs, and stable
+  non-color validation output.
+- Hardened CI with Ubuntu 24.04, concurrency cancellation, and version labels
+  for commit-pinned actions.
+- Extended static checks to require the reviewed AWS provider 6.49.0 lock,
+  canonical and cross-platform checksums, and the immutable initialization
+  path.
 - Added a least-privilege GitHub Actions workflow that runs `make check` with
   Terraform 1.15.5 and commit-pinned Node 24 actions.
 - Constrained Terraform to supported 1.x releases and the AWS provider to 6.x,

@@ -28,6 +28,7 @@ Priority:
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 - Keep reproducible Terraform initialization and validation running in GitHub Actions
+- Treat the reviewed provider lockfile as immutable during routine validation
 
 Next priorities:
 
