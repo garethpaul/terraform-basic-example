@@ -15,9 +15,11 @@ RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
 LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
 SERVER_PORT_TEST_PLAN = DOCS_PLANS / "2026-06-10-server-port-integer-test.md"
+RESOURCE_TAGS_VALIDATION_PLAN = DOCS_PLANS / "2026-06-12-resource-tags-validation.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
+RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -93,8 +95,12 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-10-readonly-provider-lock.md is missing")
     if not SERVER_PORT_TEST_PLAN.exists():
         errors.append("docs/plans/2026-06-10-server-port-integer-test.md is missing")
+    if not RESOURCE_TAGS_VALIDATION_PLAN.exists():
+        errors.append("docs/plans/2026-06-12-resource-tags-validation.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
+    if not RESOURCE_TAGS_TEST.exists():
+        errors.append("tests/resource_tags.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -175,6 +181,7 @@ def config_checks():
     main = read_text("main.tf")
     variables = read_text("variables.tf")
     server_port_test = read_text("tests/server_port.tftest.hcl") if SERVER_PORT_TEST.exists() else ""
+    resource_tags_test = read_text("tests/resource_tags.tftest.hcl") if RESOURCE_TAGS_TEST.exists() else ""
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -226,6 +233,14 @@ def config_checks():
         errors.append("resource_tags must be a string map")
     if 'ManagedBy = "terraform"' not in variables or 'Project   = "terraform-basic-example"' not in variables:
         errors.append("resource_tags must include default ownership tags")
+    for fragment in (
+        "length(var.resource_tags) > 0",
+        "length(trimspace(key)) > 0",
+        "length(trimspace(value)) > 0",
+        '!startswith(lower(key), "aws:")',
+    ):
+        if fragment not in variables:
+            errors.append(f"resource_tags validation is missing contract: {fragment}")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "var.server_port == floor(var.server_port)" not in variables:
@@ -239,6 +254,20 @@ def config_checks():
     ):
         if fragment not in server_port_test:
             errors.append(f"server port Terraform test is missing contract: {fragment}")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_resource_tags"',
+        'run "reject_empty_resource_tags"',
+        'run "reject_blank_resource_tag_key"',
+        'run "reject_blank_resource_tag_value"',
+        'run "reject_reserved_resource_tag_key"',
+        "resource_tags = {}",
+        '"aws:owner" = "platform"',
+    ):
+        if fragment not in resource_tags_test:
+            errors.append(f"resource tags Terraform test is missing contract: {fragment}")
+    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 4:
+        errors.append("resource tags Terraform tests must expect all four validation failures")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):

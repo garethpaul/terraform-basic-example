@@ -132,6 +132,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lock enforcement.
 - See `docs/plans/2026-06-10-server-port-integer-test.md` for whole-number port
   validation and the mocked Terraform plan test.
+- See `docs/plans/2026-06-12-resource-tags-validation.md` for common tag input
+  validation and mocked Terraform rejection tests.
 
 ## Contributing
 

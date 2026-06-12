@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Rejected empty, blank, and AWS-reserved common resource tags and added
+  mocked Terraform plan tests for accepted defaults and invalid tag inputs.
+
 ## 2026-06-10
 
 - Rejected fractional server ports and added mocked native Terraform plan tests
