@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Rejected IPv6 ranges passed to the security group's IPv4-only ingress field
+  and added a mocked Terraform plan test for the address-family boundary.
 - Rejected empty, blank, and AWS-reserved common resource tags and added
   mocked Terraform plan tests for accepted defaults and invalid tag inputs.
 

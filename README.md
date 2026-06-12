@@ -57,8 +57,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   the sample defaults; AMI IDs are region-specific and instance type changes
   can affect cost.
 - Override `allowed_cidr_blocks` before real use if the example web server
-  should not be reachable from the public internet. Values must be valid CIDR
-  blocks.
+  should not be reachable from the public internet. Values must be valid IPv4
+  CIDR blocks because the example configures AWS's IPv4 ingress field.
 
 ## Testing and Verification
 
@@ -70,6 +70,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   same check can be invoked from outside the repository.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
+- Native Terraform tests also reject IPv6 ranges before they can reach the
+  security group's IPv4-only `cidr_blocks` field.
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   Instance type validation requires EC2-shaped values such as `t2.micro`.
@@ -134,6 +136,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   validation and the mocked Terraform plan test.
 - See `docs/plans/2026-06-12-resource-tags-validation.md` for common tag input
   validation and mocked Terraform rejection tests.
+- See `docs/plans/2026-06-12-ipv4-ingress-cidrs.md` for the ingress address-
+  family boundary and mocked IPv6 rejection test.
 
 ## Contributing
 

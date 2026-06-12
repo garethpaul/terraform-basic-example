@@ -37,6 +37,8 @@ Helpful reports include:
   configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
+- Ingress validation rejects IPv6 ranges before they reach the AWS security
+  group's IPv4-only `cidr_blocks` field.
 - The shared Makefile may initialize, validate, and test Terraform, but the
   static contract rejects `terraform apply`.
 
