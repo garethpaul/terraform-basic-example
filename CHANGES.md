@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Rejected empty, blank, and AWS-reserved common resource tags and added
+  mocked Terraform plan tests for accepted defaults and invalid tag inputs.
+
 ## 2026-06-10
 
 - Rejected fractional server ports and added mocked native Terraform plan tests
@@ -13,7 +18,8 @@
   canonical and cross-platform checksums, and the immutable initialization
   path.
 - Added a least-privilege GitHub Actions workflow that runs `make check` with
-  Terraform 1.15.5 and commit-pinned Node 24 actions.
+  Terraform 1.15.6, commit-pinned Node 24 actions, and disabled checkout
+  credential persistence.
 - Constrained Terraform to supported 1.x releases and the AWS provider to 6.x,
   with a checked-in provider lockfile for reproducible initialization.
 - Made the Makefile's Terraform validation chain stop on the first failed

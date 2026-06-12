@@ -81,10 +81,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   the EC2 instance and security group.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 - GitHub Actions runs the same `make check` baseline on pushes and pull
-  requests with Terraform 1.15.5, so formatting, provider initialization, and
+  requests with Terraform 1.15.6, so formatting, provider initialization, and
   configuration validation are required in CI. The workflow uses read-only
-  repository permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout,
-  concurrency cancellation, and commit-pinned Node 24 actions.
+  repository permissions, disabled checkout credential persistence, a fixed
+  Ubuntu 24.04 image, a ten-minute timeout, concurrency cancellation, and
+  commit-pinned Node 24 actions.
 - `main.tf` constrains Terraform to supported 1.x releases and the AWS provider
   to 6.x. The validation gate treats `.terraform.lock.hcl` as read-only and
   currently requires the reviewed AWS provider 6.49.0 selection and registry
@@ -131,6 +132,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lock enforcement.
 - See `docs/plans/2026-06-10-server-port-integer-test.md` for whole-number port
   validation and the mocked Terraform plan test.
+- See `docs/plans/2026-06-12-resource-tags-validation.md` for common tag input
+  validation and mocked Terraform rejection tests.
 
 ## Contributing
 

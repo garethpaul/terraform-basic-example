@@ -15,9 +15,51 @@ RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
 LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
 SERVER_PORT_TEST_PLAN = DOCS_PLANS / "2026-06-10-server-port-integer-test.md"
+RESOURCE_TAGS_VALIDATION_PLAN = DOCS_PLANS / "2026-06-12-resource-tags-validation.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
+RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
+EXPECTED_WORKFLOW = """name: Check
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.6"
+          terraform_wrapper: false
+
+      - name: Run baseline
+        run: make check
+"""
 
 
 def read_text(relative_path):
@@ -25,8 +67,16 @@ def read_text(relative_path):
 
 
 def tracked_files():
-    output = subprocess.check_output(["git", "ls-files"], cwd=str(ROOT), text=True)
-    return output.splitlines()
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=str(ROOT),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return [], f"unable to inspect tracked files: {result.stderr.strip()}"
+    return result.stdout.splitlines(), None
 
 
 def hygiene_checks():
@@ -45,8 +95,12 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-10-readonly-provider-lock.md is missing")
     if not SERVER_PORT_TEST_PLAN.exists():
         errors.append("docs/plans/2026-06-10-server-port-integer-test.md is missing")
+    if not RESOURCE_TAGS_VALIDATION_PLAN.exists():
+        errors.append("docs/plans/2026-06-12-resource-tags-validation.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
+    if not RESOURCE_TAGS_TEST.exists():
+        errors.append("tests/resource_tags.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -57,11 +111,15 @@ def hygiene_checks():
             errors.append(f"{plan_path.relative_to(ROOT)} must record completed status and make check verification")
 
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
+    gitignore_lines = {line.strip() for line in gitignore.splitlines()}
     for pattern in (".terraform/", "*.tfstate", "*.tfstate.*", "*.tfvars", "crash.log"):
-        if pattern not in gitignore:
+        if pattern not in gitignore_lines:
             errors.append(f".gitignore must include Terraform pattern: {pattern}")
 
-    for path in tracked_files():
+    tracked, tracked_error = tracked_files()
+    if tracked_error:
+        errors.append(tracked_error)
+    for path in tracked:
         if path.endswith(".tfstate") or ".tfstate." in path or path.endswith(".tfvars"):
             errors.append(f"state or local variable file must not be tracked: {path}")
 
@@ -69,23 +127,8 @@ def hygiene_checks():
         errors.append(".github/workflows/check.yml is missing")
     else:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        for fragment in (
-            "permissions:",
-            "contents: read",
-            "workflow_dispatch:",
-            "concurrency:",
-            "cancel-in-progress: true",
-            "runs-on: ubuntu-24.04",
-            "timeout-minutes: 10",
-            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3",
-            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0",
-            "hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1",
-            'python-version: "3.12"',
-            'terraform_version: "1.15.5"',
-            "run: make check",
-        ):
-            if fragment not in workflow:
-                errors.append(f"CI workflow is missing expected fragment: {fragment}")
+        if workflow != EXPECTED_WORKFLOW:
+            errors.append("CI workflow must match the reviewed credential-free Terraform validation contract")
 
     if not LOCK_FILE.exists():
         errors.append(".terraform.lock.hcl is missing")
@@ -106,11 +149,17 @@ def hygiene_checks():
         if len(re.findall(r'^\s+"zh:[0-9a-f]{64}",$', lock_file, re.MULTILINE)) < 10:
             errors.append(".terraform.lock.hcl must include registry checksums for supported platforms")
 
-    readme = read_text("README.md")
-    if "GitHub Actions" not in readme:
-        errors.append("README must document the GitHub Actions check")
+    for doc_path in ("README.md", "SECURITY.md", "VISION.md", "CHANGES.md"):
+        if "GitHub Actions" not in read_text(doc_path):
+            errors.append(f"{doc_path} must document the GitHub Actions check")
 
     makefile = read_text("Makefile")
+    if re.search(
+        r'(?:terraform|"?\$\(TERRAFORM\)"?)\s+apply\b',
+        makefile,
+        re.IGNORECASE,
+    ):
+        errors.append("Makefile must not apply infrastructure")
     if 'set -e;' not in makefile:
         errors.append("Makefile Terraform validation must fail immediately when a command fails")
     for fragment in (
@@ -132,6 +181,7 @@ def config_checks():
     main = read_text("main.tf")
     variables = read_text("variables.tf")
     server_port_test = read_text("tests/server_port.tftest.hcl") if SERVER_PORT_TEST.exists() else ""
+    resource_tags_test = read_text("tests/resource_tags.tftest.hcl") if RESOURCE_TAGS_TEST.exists() else ""
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -183,6 +233,14 @@ def config_checks():
         errors.append("resource_tags must be a string map")
     if 'ManagedBy = "terraform"' not in variables or 'Project   = "terraform-basic-example"' not in variables:
         errors.append("resource_tags must include default ownership tags")
+    for fragment in (
+        "length(var.resource_tags) > 0",
+        "length(trimspace(key)) > 0",
+        "length(trimspace(value)) > 0",
+        '!startswith(lower(key), "aws:")',
+    ):
+        if fragment not in variables:
+            errors.append(f"resource_tags validation is missing contract: {fragment}")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "var.server_port == floor(var.server_port)" not in variables:
@@ -196,6 +254,20 @@ def config_checks():
     ):
         if fragment not in server_port_test:
             errors.append(f"server port Terraform test is missing contract: {fragment}")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_resource_tags"',
+        'run "reject_empty_resource_tags"',
+        'run "reject_blank_resource_tag_key"',
+        'run "reject_blank_resource_tag_value"',
+        'run "reject_reserved_resource_tag_key"',
+        "resource_tags = {}",
+        '"aws:owner" = "platform"',
+    ):
+        if fragment not in resource_tags_test:
+            errors.append(f"resource tags Terraform test is missing contract: {fragment}")
+    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 4:
+        errors.append("resource tags Terraform tests must expect all four validation failures")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):

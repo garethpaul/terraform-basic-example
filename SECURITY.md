@@ -30,12 +30,15 @@ Helpful reports include:
   CI initializes with `-lockfile=readonly`, and static checks require the
   reviewed provider selection plus canonical and cross-platform registry
   checksums. Review lockfile changes alongside the corresponding constraint.
-- GitHub Actions runs `make check` with Terraform 1.15.5, read-only repository
-  permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout, concurrency
-  cancellation, and commit-pinned Node 24 actions; review workflow and checker
-  changes alongside Terraform configuration changes.
+- GitHub Actions runs `make check` with Terraform 1.15.6, read-only repository
+  permissions, disabled checkout credential persistence, a fixed Ubuntu 24.04
+  image, a ten-minute timeout, concurrency cancellation, and commit-pinned Node
+  24 actions; review workflow and checker changes alongside Terraform
+  configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
+- The shared Makefile may initialize, validate, and test Terraform, but the
+  static contract rejects `terraform apply`.
 
 ## Infrastructure Notes
 
