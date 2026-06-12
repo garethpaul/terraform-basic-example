@@ -26,8 +26,19 @@ Helpful reports include:
 
 - This repository appears to be an Infrastructure-as-code example. The active security scope is the code and documentation on the default branch.
 - Review found infrastructure, deployment, proxy, or cloud configuration; changes in those areas should receive security-focused review before merge.
-- No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
-- GitHub Actions runs the static `make check` baseline; review workflow and checker changes alongside Terraform configuration changes.
+- Provider selections and checksums are committed in `.terraform.lock.hcl`;
+  CI initializes with `-lockfile=readonly`, and static checks require the
+  reviewed provider selection plus canonical and cross-platform registry
+  checksums. Review lockfile changes alongside the corresponding constraint.
+- GitHub Actions runs `make check` with Terraform 1.15.6, read-only repository
+  permissions, disabled checkout credential persistence, a fixed Ubuntu 24.04
+  image, a ten-minute timeout, concurrency cancellation, and commit-pinned Node
+  24 actions; review workflow and checker changes alongside Terraform
+  configuration changes.
+- Mocked Terraform tests reject fractional listener ports before invalid user
+  data or security-group values can reach an AWS plan.
+- The shared Makefile may initialize, validate, and test Terraform, but the
+  static contract rejects `terraform apply`.
 
 ## Infrastructure Notes
 

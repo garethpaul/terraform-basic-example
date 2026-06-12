@@ -2,8 +2,23 @@
 
 ## 2026-06-10
 
-- Added a lightweight GitHub Actions workflow that runs `make check` for the
-  Terraform hygiene and configuration baseline.
+- Rejected fractional server ports and added mocked native Terraform plan tests
+  for accepted defaults and expected variable-validation failures.
+- Made Terraform validation independent of the caller's working directory and
+  enforced read-only provider initialization, formatting diffs, and stable
+  non-color validation output.
+- Hardened CI with Ubuntu 24.04, concurrency cancellation, and version labels
+  for commit-pinned actions.
+- Extended static checks to require the reviewed AWS provider 6.49.0 lock,
+  canonical and cross-platform checksums, and the immutable initialization
+  path.
+- Added a least-privilege GitHub Actions workflow that runs `make check` with
+  Terraform 1.15.6, commit-pinned Node 24 actions, and disabled checkout
+  credential persistence.
+- Constrained Terraform to supported 1.x releases and the AWS provider to 6.x,
+  with a checked-in provider lockfile for reproducible initialization.
+- Made the Makefile's Terraform validation chain stop on the first failed
+  formatting, initialization, or validation command.
 - Extended hygiene checks to require the CI workflow and completed CI plan.
 
 ## 2026-06-09

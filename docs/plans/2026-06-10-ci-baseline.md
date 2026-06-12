@@ -1,33 +1,50 @@
-# Terraform Basic Example CI Baseline
+# Reproducible Terraform Validation Gate
 
 ## Status: Completed
 
 ## Context
 
-`terraform-basic-example` has static hygiene and configuration checks behind
-`make check`. The repository needs a lightweight GitHub Actions gate so state
-hygiene, metadata, tag, and security defaults are checked before review.
+The repository had static configuration checks behind `make check`, but no
+hosted gate. The initial CI draft only installed Python, which meant the
+Makefile would skip `terraform fmt`, provider initialization, and `terraform
+validate`. Terraform and AWS provider constraints were also broad enough for
+substantial toolchain drift between contributors.
 
 ## Objectives
 
-- Run the existing static Terraform baseline in GitHub Actions.
-- Keep the hosted runner job useful even when the Terraform CLI is absent.
-- Make the CI workflow presence part of the hygiene contract.
+- Run the complete `make check` baseline on pushes and pull requests.
+- Pin the hosted Terraform CLI and provider dependency selection.
+- Keep workflow permissions least-privilege and execution bounded.
+- Enforce the CI and lockfile contract with the static hygiene checker.
 
 ## Work Completed
 
-- Added `.github/workflows/check.yml` to run `make check` on pushes, pull
-  requests, and manual dispatches.
-- Set up Python 3.12 in CI for the static Terraform checker.
-- Extended hygiene checks to require the CI workflow and this completed plan.
-- Updated README, VISION, SECURITY, and CHANGES with the CI baseline.
+- Added `.github/workflows/check.yml` for pushes to `master`, pull requests,
+  and manual runs.
+- Installed Terraform 1.15.6 with an immutable Node 24 action commit.
+- Granted only read access to repository contents, disabled checkout credential
+  persistence, and set a ten-minute timeout.
+- Constrained Terraform to `>= 1.5.0, < 2.0.0` and the AWS provider to the 6.x
+  release line.
+- Generated and committed `.terraform.lock.hcl` for reproducible provider
+  selection and checksum verification.
+- Extended hygiene and configuration checks to enforce the workflow,
+  constraints, and lockfile.
+- Made the Makefile's Terraform command chain fail immediately so an earlier
+  formatting or initialization error cannot be hidden by a later command.
+- Updated README, SECURITY, VISION, and CHANGES with the validation contract.
 
 ## Verification
 
+- `python3 -m py_compile scripts/check-terraform-source.py`
+- `python3 scripts/check-terraform-source.py --mode hygiene`
+- `python3 scripts/check-terraform-source.py --mode config`
+- `terraform fmt -check`
+- `terraform init -backend=false`
+- `terraform validate`
 - `make check`
 - `git diff --check`
 
-## Follow-Up Candidates
-
-- Install a pinned Terraform CLI in CI once the desired version constraint is
-  documented.
+The validation gate initializes providers but does not configure AWS
+credentials, create a plan, apply infrastructure, or contact an AWS account.
+The static contract also rejects `terraform apply` in the shared Makefile.
