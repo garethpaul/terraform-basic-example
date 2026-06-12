@@ -66,12 +66,11 @@ variable "allowed_cidr_blocks" {
   validation {
     condition = (
       length(var.allowed_cidr_blocks) > 0 &&
-      length([
-        for cidr in var.allowed_cidr_blocks : cidr
-        if can(cidrhost(cidr, 0))
-      ]) == length(var.allowed_cidr_blocks)
+      alltrue([
+        for cidr in var.allowed_cidr_blocks : can(cidrnetmask(cidr))
+      ])
     )
-    error_message = "allowed_cidr_blocks must contain one or more valid CIDR blocks."
+    error_message = "allowed_cidr_blocks must contain one or more valid IPv4 CIDR blocks."
   }
 }
 

@@ -16,10 +16,12 @@ CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
 LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
 SERVER_PORT_TEST_PLAN = DOCS_PLANS / "2026-06-10-server-port-integer-test.md"
 RESOURCE_TAGS_VALIDATION_PLAN = DOCS_PLANS / "2026-06-12-resource-tags-validation.md"
+IPV4_INGRESS_PLAN = DOCS_PLANS / "2026-06-12-ipv4-ingress-cidrs.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
 RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
+ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -97,10 +99,14 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-10-server-port-integer-test.md is missing")
     if not RESOURCE_TAGS_VALIDATION_PLAN.exists():
         errors.append("docs/plans/2026-06-12-resource-tags-validation.md is missing")
+    if not IPV4_INGRESS_PLAN.exists():
+        errors.append("docs/plans/2026-06-12-ipv4-ingress-cidrs.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
         errors.append("tests/resource_tags.tftest.hcl is missing")
+    if not ALLOWED_CIDR_BLOCKS_TEST.exists():
+        errors.append("tests/allowed_cidr_blocks.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -182,6 +188,11 @@ def config_checks():
     variables = read_text("variables.tf")
     server_port_test = read_text("tests/server_port.tftest.hcl") if SERVER_PORT_TEST.exists() else ""
     resource_tags_test = read_text("tests/resource_tags.tftest.hcl") if RESOURCE_TAGS_TEST.exists() else ""
+    allowed_cidr_blocks_test = (
+        read_text("tests/allowed_cidr_blocks.tftest.hcl")
+        if ALLOWED_CIDR_BLOCKS_TEST.exists()
+        else ""
+    )
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -217,8 +228,19 @@ def config_checks():
         errors.append("security group must carry a Name tag")
     if 'variable "allowed_cidr_blocks"' not in variables:
         errors.append("variables.tf must define allowed_cidr_blocks")
-    if "var.allowed_cidr_blocks" not in variables or "cidrhost(cidr, 0)" not in variables:
-        errors.append("allowed_cidr_blocks must validate CIDR values")
+    if "var.allowed_cidr_blocks" not in variables or "can(cidrnetmask(cidr))" not in variables:
+        errors.append("allowed_cidr_blocks must validate IPv4 CIDR values")
+    if 'length(regexall(":", cidr)) == 0' in variables:
+        errors.append("allowed_cidr_blocks must use Terraform IPv4 parsing instead of string heuristics")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_ipv4_cidr_blocks"',
+        'run "reject_ipv6_cidr_blocks"',
+        'allowed_cidr_blocks = ["2001:db8::/32"]',
+        'expect_failures = [var.allowed_cidr_blocks]',
+    ):
+        if fragment not in allowed_cidr_blocks_test:
+            errors.append(f"allowed CIDR Terraform test is missing contract: {fragment}")
     if 'variable "aws_region"' not in variables or "var.aws_region" not in variables:
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:
