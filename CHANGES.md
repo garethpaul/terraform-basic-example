@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-10
+
+- Added a lightweight GitHub Actions workflow that runs `make check` for the
+  Terraform hygiene and configuration baseline.
+- Extended hygiene checks to require the CI workflow and completed CI plan.
+
 ## 2026-06-09
 
 - Added common `resource_tags` and static checks so the EC2 instance and

@@ -12,6 +12,8 @@ CANONICAL_PLAN = DOCS_PLANS / "2026-06-08-terraform-basic-example-baseline.md"
 SECURITY_GROUP_PLAN = DOCS_PLANS / "2026-06-09-security-group-metadata.md"
 INSTANCE_TYPE_SYNTAX_PLAN = DOCS_PLANS / "2026-06-09-instance-type-syntax.md"
 RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
+CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 
 
 def read_text(relative_path):
@@ -33,6 +35,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-09-instance-type-syntax.md is missing")
     if not RESOURCE_TAGS_PLAN.exists():
         errors.append("docs/plans/2026-06-09-resource-tags.md is missing")
+    if not CI_PLAN.exists():
+        errors.append("docs/plans/2026-06-10-ci-baseline.md is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -50,6 +54,23 @@ def hygiene_checks():
     for path in tracked_files():
         if path.endswith(".tfstate") or ".tfstate." in path or path.endswith(".tfvars"):
             errors.append(f"state or local variable file must not be tracked: {path}")
+
+    if not CI_WORKFLOW.exists():
+        errors.append(".github/workflows/check.yml is missing")
+    else:
+        workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+        for fragment in (
+            "actions/checkout@v4",
+            "actions/setup-python@v5",
+            'python-version: "3.12"',
+            "make check",
+        ):
+            if fragment not in workflow:
+                errors.append(f"CI workflow is missing expected fragment: {fragment}")
+
+    readme = read_text("README.md")
+    if "GitHub Actions" not in readme:
+        errors.append("README must document the GitHub Actions check")
 
     return errors
 
