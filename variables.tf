@@ -65,9 +65,11 @@ variable "allowed_cidr_blocks" {
 
   validation {
     condition = alltrue([
-      for cidr in var.allowed_cidr_blocks : can(cidrnetmask(cidr))
+      for cidr in var.allowed_cidr_blocks :
+      can(cidrnetmask(cidr)) &&
+      cidr == try(cidrsubnet(cidr, 0, 0), "")
     ])
-    error_message = "allowed_cidr_blocks must contain only valid IPv4 CIDR blocks."
+    error_message = "allowed_cidr_blocks must contain only canonical IPv4 CIDR blocks."
   }
 }
 

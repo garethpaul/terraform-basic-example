@@ -37,7 +37,8 @@ Helpful reports include:
   configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
-- Ingress validation rejects IPv6 ranges before they reach the AWS security
+- Ingress validation requires canonical IPv4 CIDRs and rejects IPv6,
+  malformed, or host-bit-bearing ranges before they reach the AWS security
   group's IPv4-only `cidr_blocks` field.
 - The default plan creates no inbound HTTP rule; callers must opt in with
   reviewed IPv4 CIDRs, preferably a narrow source range rather than public

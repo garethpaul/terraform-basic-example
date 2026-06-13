@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Required canonical IPv4 CIDRs so host-bit-bearing ranges fail Terraform
+  validation before reaching AWS security-group operations.
 - Disabled inbound HTTP in the default plan and required callers to opt in
   with validated IPv4 CIDRs, with mocked provider runs for both states and
   rejection coverage for malformed and IPv6 ranges.

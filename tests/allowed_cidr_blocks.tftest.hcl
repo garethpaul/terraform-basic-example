@@ -41,3 +41,13 @@ run "reject_malformed_cidr_blocks" {
 
   expect_failures = [var.allowed_cidr_blocks]
 }
+
+run "reject_noncanonical_ipv4_cidr_blocks" {
+  command = plan
+
+  variables {
+    allowed_cidr_blocks = ["198.51.100.10/24"]
+  }
+
+  expect_failures = [var.allowed_cidr_blocks]
+}

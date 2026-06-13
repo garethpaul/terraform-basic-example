@@ -57,8 +57,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   the sample defaults; AMI IDs are region-specific and instance type changes
   can affect cost.
 - Inbound HTTP is disabled by default. Set `allowed_cidr_blocks` explicitly to
-  reviewed IPv4 CIDRs when access is needed, preferably a narrow `/32` for the
-  caller rather than `0.0.0.0/0`. For example, set
+  reviewed canonical IPv4 CIDRs when access is needed, preferably a narrow `/32`
+  for the caller rather than `0.0.0.0/0`. For example, set
   `TF_VAR_allowed_cidr_blocks='["198.51.100.10/32"]'` before planning, replacing
   the reserved documentation address with the caller's public IP.
 
@@ -73,9 +73,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
 - Native Terraform tests use the mocked provider to prove the default creates
-  no inbound HTTP rule, explicit IPv4 CIDRs opt in to one rule, and malformed
-  or IPv6 ranges are rejected before they can reach the security group's
-  IPv4-only `cidr_blocks` field.
+  no inbound HTTP rule, explicit canonical IPv4 CIDRs opt in to one rule, and
+  malformed, IPv6, or host-bit-bearing ranges are rejected before they can
+  reach the security group's IPv4-only `cidr_blocks` field.
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   Instance type validation requires EC2-shaped values such as `t2.micro`.
@@ -144,6 +144,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   family boundary and mocked IPv6 rejection test.
 - See `docs/plans/2026-06-13-private-ingress-default.md` for the opt-in HTTP
   ingress default and mocked rule-creation tests.
+- See `docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md` for canonical
+  IPv4 CIDR validation before provider execution.
 
 ## Contributing
 
