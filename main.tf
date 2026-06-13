@@ -65,13 +65,16 @@ resource "aws_security_group" "instance" {
   name        = "terraform-example-instance"
   description = "Allow HTTP access to the Terraform example web server"
 
-  # Inbound HTTP from anywhere
-  ingress {
-    description = "HTTP access to the example web server"
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
+  dynamic "ingress" {
+    for_each = length(var.allowed_cidr_blocks) == 0 ? [] : [var.allowed_cidr_blocks]
+
+    content {
+      description = "HTTP access to the example web server"
+      from_port   = var.server_port
+      to_port     = var.server_port
+      protocol    = "tcp"
+      cidr_blocks = ingress.value
+    }
   }
 
   tags = merge(var.resource_tags, {
