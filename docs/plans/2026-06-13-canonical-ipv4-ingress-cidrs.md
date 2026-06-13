@@ -1,6 +1,6 @@
 # Canonical IPv4 Ingress CIDRs
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -58,3 +58,28 @@ documentation drift, and regressed plan status.
 - Do not run `terraform plan` against a real account or `terraform apply`.
 - Do not change the private default, create IPv6 ingress, normalize caller
   input silently, or alter AWS resources, provider versions, or workflow policy.
+
+## Work Completed
+
+- Compared each parsed IPv4 CIDR with Terraform's canonical zero-host network
+  form using a fail-closed `try` expression.
+- Added a mocked plan test that rejects `198.51.100.10/24` while retaining the
+  empty default and canonical `/32` opt-in.
+- Extended static source, test, plan, and documentation contracts.
+
+## Verification
+
+- `python3 scripts/check-terraform-source.py --mode config` passed.
+- Read-only Terraform initialization reused locked AWS provider 6.49.0.
+- The focused ingress test file passed 5 tests with 0 failures.
+- Full `make check` passed formatting, read-only initialization, validation,
+  static contracts, and 12 mocked tests with 0 failures; the same gate passed
+  from an external working directory.
+- Eight focused mutations covering removed or unsafe normalization, permissive
+  fallback, weakened tests, documentation drift, and plan status were rejected.
+- The provider lock remained byte-identical. Workflow YAML and README SVG
+  parsing, Python syntax, diff whitespace, generated-artifact, and intended-
+  diff secret audits passed.
+- Plan-aware validation, provider-boundary, testing, maintainability, and scope
+  review found no actionable findings. No credentials, real plan, or apply were
+  used.
