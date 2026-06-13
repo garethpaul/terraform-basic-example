@@ -59,18 +59,15 @@ variable "server_port" {
 }
 
 variable "allowed_cidr_blocks" {
-  description = "CIDR blocks allowed to reach the example web server"
+  description = "IPv4 CIDR blocks allowed to reach the example web server; leave empty to disable inbound HTTP"
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 
   validation {
-    condition = (
-      length(var.allowed_cidr_blocks) > 0 &&
-      alltrue([
-        for cidr in var.allowed_cidr_blocks : can(cidrnetmask(cidr))
-      ])
-    )
-    error_message = "allowed_cidr_blocks must contain one or more valid IPv4 CIDR blocks."
+    condition = alltrue([
+      for cidr in var.allowed_cidr_blocks : can(cidrnetmask(cidr))
+    ])
+    error_message = "allowed_cidr_blocks must contain only valid IPv4 CIDR blocks."
   }
 }
 

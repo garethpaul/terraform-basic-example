@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-13
+
+- Disabled inbound HTTP in the default plan and required callers to opt in
+  with validated IPv4 CIDRs, with mocked provider runs for both states and
+  rejection coverage for malformed and IPv6 ranges.
+
 ## 2026-06-12
 
 - Rejected IPv6 ranges passed to the security group's IPv4-only ingress field

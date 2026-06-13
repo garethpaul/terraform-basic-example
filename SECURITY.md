@@ -39,6 +39,9 @@ Helpful reports include:
   data or security-group values can reach an AWS plan.
 - Ingress validation rejects IPv6 ranges before they reach the AWS security
   group's IPv4-only `cidr_blocks` field.
+- The default plan creates no inbound HTTP rule; callers must opt in with
+  reviewed IPv4 CIDRs, preferably a narrow source range rather than public
+  `0.0.0.0/0` access.
 - The shared Makefile may initialize, validate, and test Terraform, but the
   static contract rejects `terraform apply`.
 
