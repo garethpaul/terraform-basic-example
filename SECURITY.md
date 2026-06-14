@@ -37,6 +37,8 @@ Helpful reports include:
   configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
+- AMI ID length validation rejects structurally impossible image identifiers
+  before provider or AWS API interaction.
 - Ingress validation requires canonical IPv4 CIDRs and rejects IPv6,
   malformed, or host-bit-bearing ranges before they reach the AWS security
   group's IPv4-only `cidr_blocks` field.

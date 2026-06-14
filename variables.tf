@@ -27,8 +27,8 @@ variable "ami_id" {
   default     = "ami-0c55b159cbfafe1f0"
 
   validation {
-    condition     = can(regex("^ami-[0-9a-f]+$", var.ami_id))
-    error_message = "ami_id must look like an AWS AMI ID, such as ami-0c55b159cbfafe1f0."
+    condition     = can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))
+    error_message = "ami_id must use an 8- or 17-character lowercase hexadecimal AWS AMI ID."
   }
 }
 

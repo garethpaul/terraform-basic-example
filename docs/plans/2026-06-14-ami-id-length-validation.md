@@ -1,6 +1,6 @@
 # AMI ID Length Validation
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -27,11 +27,18 @@ validation, before provider or AWS API interaction.
 
 ## Verification
 
-- focused static config contract and mocked Terraform tests
-- repository and external-directory `make check`
-- hostile regex, short-ID, legacy-ID, current-ID, failure-count,
-  documentation, and plan-status mutations
-- state, plan, cache, variable, credential, artifact, and exact-diff audits
+- The focused static config contract passed with the two accepted AMI widths
+  and five invalid identifier classes enforced.
+- The repository and external-directory `make check` passed in an isolated
+  Git-backed copy with Terraform 1.15.5, AWS provider 6.49.0, no cloud
+  credentials, and 19 mocked plans passing with zero failures.
+- Seven hostile AMI ID mutations were rejected: regex, short-ID, legacy-ID,
+  current-ID, failure-count, documentation, and plan-status regressions.
+- The hosted workflow remains authoritative for its pinned Terraform 1.15.6
+  execution on the exact pushed head.
+- State, plan, cache, variable, credential, artifact, and exact-diff audits
+  passed before commit; only validation-created `.terraform` directories were
+  removed by explicit path, and the provider lockfile remained unchanged.
 
 ## Scope Boundary
 

@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-14
+
+- Added AMI ID length validation for the legacy 8-character and current
+  17-character lowercase hexadecimal EC2 identifier widths.
+
 ## 2026-06-13
 
 - Required canonical IPv4 CIDRs so host-bit-bearing ranges fail Terraform

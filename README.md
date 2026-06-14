@@ -72,6 +72,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   same check can be invoked from outside the repository.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
+- AMI ID length validation accepts only the legacy 8-character or current
+  17-character lowercase hexadecimal EC2 identifier widths.
 - Native Terraform tests use the mocked provider to prove the default creates
   no inbound HTTP rule, explicit canonical IPv4 CIDRs opt in to one rule, and
   malformed, IPv6, or host-bit-bearing ranges are rejected before they can
@@ -148,6 +150,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   IPv4 CIDR validation before provider execution.
 - See `docs/plans/2026-06-14-make-root-override-protection.md` for authoritative
   repository-root selection across all Make aliases.
+- See `docs/plans/2026-06-14-ami-id-length-validation.md` for mocked plan
+  coverage of accepted and structurally invalid EC2 image identifiers.
 
 ## Contributing
 

@@ -20,11 +20,13 @@ IPV4_INGRESS_PLAN = DOCS_PLANS / "2026-06-12-ipv4-ingress-cidrs.md"
 PRIVATE_INGRESS_PLAN = DOCS_PLANS / "2026-06-13-private-ingress-default.md"
 CANONICAL_IPV4_PLAN = DOCS_PLANS / "2026-06-13-canonical-ipv4-ingress-cidrs.md"
 ROOT_OVERRIDE_PLAN = DOCS_PLANS / "2026-06-14-make-root-override-protection.md"
+AMI_ID_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-ami-id-length-validation.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
 RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
 ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
+AMI_ID_TEST = ROOT / "tests" / "ami_id.tftest.hcl"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -110,12 +112,16 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md is missing")
     if not ROOT_OVERRIDE_PLAN.exists():
         errors.append("docs/plans/2026-06-14-make-root-override-protection.md is missing")
+    if not AMI_ID_LENGTH_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-ami-id-length-validation.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
         errors.append("tests/resource_tags.tftest.hcl is missing")
     if not ALLOWED_CIDR_BLOCKS_TEST.exists():
         errors.append("tests/allowed_cidr_blocks.tftest.hcl is missing")
+    if not AMI_ID_TEST.exists():
+        errors.append("tests/ami_id.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -124,6 +130,15 @@ def hygiene_checks():
         plan = plan_path.read_text(encoding="utf-8")
         if "Status: Completed" not in plan or "make check" not in plan:
             errors.append(f"{plan_path.relative_to(ROOT)} must record completed status and make check verification")
+
+    if AMI_ID_LENGTH_PLAN.exists():
+        ami_plan = AMI_ID_LENGTH_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "repository and external-directory `make check` passed",
+            "hostile AMI ID mutations were rejected",
+        ):
+            if evidence not in ami_plan:
+                errors.append(f"{AMI_ID_LENGTH_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
 
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
     gitignore_lines = {line.strip() for line in gitignore.splitlines()}
@@ -169,6 +184,8 @@ def hygiene_checks():
             errors.append(f"{doc_path} must document the GitHub Actions check")
         if "canonical ipv4 cidr" not in read_text(doc_path).lower():
             errors.append(f"{doc_path} must document canonical IPv4 CIDRs")
+        if "ami id length validation" not in read_text(doc_path).lower():
+            errors.append(f"{doc_path} must document AMI ID length validation")
 
     makefile = read_text("Makefile")
     root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
@@ -207,6 +224,8 @@ def hygiene_checks():
 
     if "docs/plans/2026-06-14-make-root-override-protection.md" not in read_text("README.md"):
         errors.append("README must index Make root override protection evidence")
+    if "docs/plans/2026-06-14-ami-id-length-validation.md" not in read_text("README.md"):
+        errors.append("README must index AMI ID length validation evidence")
 
     return errors
 
@@ -224,6 +243,7 @@ def config_checks():
         if ALLOWED_CIDR_BLOCKS_TEST.exists()
         else ""
     )
+    ami_id_test = read_text("tests/ami_id.tftest.hcl") if AMI_ID_TEST.exists() else ""
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -310,6 +330,24 @@ def config_checks():
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:
         errors.append("variables.tf must define and validate ami_id")
+    if 'can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
+        errors.append("ami_id must require an 8- or 17-character lowercase hexadecimal suffix")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_current_ami_id"',
+        'run "accept_legacy_ami_id"',
+        'run "reject_short_ami_id"',
+        'run "reject_intermediate_length_ami_id"',
+        'run "reject_long_ami_id"',
+        'run "reject_uppercase_ami_id"',
+        'run "reject_malformed_ami_id"',
+        'ami_id = "ami-1234abcd"',
+        'expect_failures = [var.ami_id]',
+    ):
+        if fragment not in ami_id_test:
+            errors.append(f"AMI ID Terraform test is missing contract: {fragment}")
+    if ami_id_test.count("expect_failures = [var.ami_id]") != 5:
+        errors.append("AMI ID Terraform tests must expect all five invalid identifier failures")
     if 'variable "instance_type"' not in variables or "var.instance_type" not in variables:
         errors.append("variables.tf must define and validate instance_type")
     if 'can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))' not in variables:
