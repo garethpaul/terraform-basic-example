@@ -1,6 +1,6 @@
 # Make Root Override Protection
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -56,3 +56,30 @@ and this plan's completed evidence.
 This change does not alter Terraform configuration, tests, provider versions,
 the lockfile, workflow policy, resources, ingress behavior, or execute plan or
 apply.
+
+## Work Completed
+
+- Marked the root-first repository path as an explicit GNU Make override.
+- Added exact declaration, ordering, alias, Terraform-command, README, and plan
+  contracts to the hygiene checker.
+- Preserved tool overrides, read-only validation, apply prohibition, and all
+  infrastructure configuration.
+
+## Verification Results
+
+- Terraform 1.15.6 formatting, read-only initialization with locked AWS
+  provider 6.49.0, validation, and 12 mocked tests passed with zero failures.
+- The same full gate passed from an external working directory with AWS
+  credential/profile variables removed; no plan or apply was executed.
+- The provider lock remained byte-identical across both full gates.
+- All five public aliases passed from both working-directory contexts with
+  hostile environment and command-line `ROOT` assignments, for 20 static-path
+  cases; explicit Python and Terraform overrides remained effective.
+- Eight protected-declaration, duplicate protected/unprotected assignment,
+  placement, alias, path, README, and plan mutations were rejected.
+- Plan-aware correctness, security, testing, maintainability, reliability,
+  Terraform-safety, and project-standards review found no actionable findings.
+- Exact diff, protected Terraform/test/workflow path, generated-artifact,
+  high-confidence secret, and whitespace audits passed.
+- Only the validation-created `.terraform` directory was removed explicitly;
+  no state, plan, variable, or credential file was created or committed.
