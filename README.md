@@ -146,6 +146,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ingress default and mocked rule-creation tests.
 - See `docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md` for canonical
   IPv4 CIDR validation before provider execution.
+- See `docs/plans/2026-06-14-make-root-override-protection.md` for authoritative
+  repository-root selection across all Make aliases.
 
 ## Contributing
 

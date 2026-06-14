@@ -19,6 +19,7 @@ RESOURCE_TAGS_VALIDATION_PLAN = DOCS_PLANS / "2026-06-12-resource-tags-validatio
 IPV4_INGRESS_PLAN = DOCS_PLANS / "2026-06-12-ipv4-ingress-cidrs.md"
 PRIVATE_INGRESS_PLAN = DOCS_PLANS / "2026-06-13-private-ingress-default.md"
 CANONICAL_IPV4_PLAN = DOCS_PLANS / "2026-06-13-canonical-ipv4-ingress-cidrs.md"
+ROOT_OVERRIDE_PLAN = DOCS_PLANS / "2026-06-14-make-root-override-protection.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -107,6 +108,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-13-private-ingress-default.md is missing")
     if not CANONICAL_IPV4_PLAN.exists():
         errors.append("docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md is missing")
+    if not ROOT_OVERRIDE_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-make-root-override-protection.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -168,6 +171,17 @@ def hygiene_checks():
             errors.append(f"{doc_path} must document canonical IPv4 CIDRs")
 
     makefile = read_text("Makefile")
+    root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
+    root_assignments = re.findall(r"^(?:override\s+)?ROOT\s*[:+?]?=", makefile, re.MULTILINE)
+    if len(root_assignments) != 1 or makefile.count(root_declaration) != 1:
+        errors.append("Makefile must contain exactly one protected repository-root declaration")
+    root_and_tool_block = "\n".join((
+        root_declaration,
+        "PYTHON ?= python3",
+        "TERRAFORM ?= terraform",
+    ))
+    if makefile.count(root_and_tool_block) != 1:
+        errors.append("Makefile must keep the protected root before tool overrides")
     if re.search(
         r'(?:terraform|"?\$\(TERRAFORM\)"?)\s+apply\b',
         makefile,
@@ -177,7 +191,11 @@ def hygiene_checks():
     if 'set -e;' not in makefile:
         errors.append("Makefile Terraform validation must fail immediately when a command fails")
     for fragment in (
-        "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))",
+        ".PHONY: build check lint test verify",
+        "build: lint",
+        "verify: lint test build",
+        "check: verify",
+        '"$(TERRAFORM)" fmt -check -diff',
         'cd "$(ROOT)";',
         "fmt -check -diff",
         "init -backend=false -lockfile=readonly",
@@ -186,6 +204,9 @@ def hygiene_checks():
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
+
+    if "docs/plans/2026-06-14-make-root-override-protection.md" not in read_text("README.md"):
+        errors.append("README must index Make root override protection evidence")
 
     return errors
 
