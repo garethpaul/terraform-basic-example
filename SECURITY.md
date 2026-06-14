@@ -41,6 +41,8 @@ Helpful reports include:
   before provider or AWS API interaction.
 - Resource tag length validation rejects overlong keys and values before
   provider or AWS API interaction.
+- Resource tag count validation includes the resource-owned `Name` key and
+  rejects final EC2 tag sets above the 50-tag service limit.
 - Ingress validation requires canonical IPv4 CIDRs and rejects IPv6,
   malformed, or host-bit-bearing ranges before they reach the AWS security
   group's IPv4-only `cidr_blocks` field.

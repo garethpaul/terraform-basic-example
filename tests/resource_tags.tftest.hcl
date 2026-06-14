@@ -14,6 +14,31 @@ run "accept_resource_tag_length_boundaries" {
   }
 }
 
+run "accept_49_resource_tags_without_name" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      for index in range(49) : "Tag${index}" => "terraform"
+    }
+  }
+}
+
+run "accept_50_resource_tags_with_name" {
+  command = plan
+
+  variables {
+    resource_tags = merge(
+      {
+        Name = "caller-value"
+      },
+      {
+        for index in range(49) : "Tag${index}" => "terraform"
+      }
+    )
+  }
+}
+
 run "reject_empty_resource_tags" {
   command = plan
 
@@ -78,6 +103,18 @@ run "reject_overlong_resource_tag_value" {
   variables {
     resource_tags = {
       Owner = join("", [for index in range(257) : "v"])
+    }
+  }
+
+  expect_failures = [var.resource_tags]
+}
+
+run "reject_50_resource_tags_without_name" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      for index in range(50) : "Tag${index}" => "terraform"
     }
   }
 

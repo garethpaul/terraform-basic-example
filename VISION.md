@@ -20,6 +20,7 @@ Priority:
 - Validate instance type overrides before provider planning
 - Preserve AMI ID length validation for legacy and current EC2 identifiers
 - Preserve resource tag length validation before provider planning
+- Preserve resource tag count validation after resource-owned tag merging
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
 - Validate server ports as whole numbers before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance

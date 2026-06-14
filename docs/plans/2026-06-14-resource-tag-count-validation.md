@@ -1,6 +1,6 @@
 # Resource Tag Count Validation
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -46,6 +46,20 @@ module boundary so callers receive a deterministic Terraform variable error.
   suite-count, and plan-status mutations
 - provider-lock identity plus state, plan, variable, credential, artifact,
   secret, exact-diff, staged-path, and whitespace audits
+
+## Verification Results
+
+- The focused resource-tag suite passed all 11 cases, including accepted
+  49-tag and deduplicated 50-tag boundaries plus rejection of 50 caller tags
+  without `Name`.
+- The full mocked Terraform suite passed all 25 cases, and the provider lock
+  remained byte-identical.
+- The repository and external-directory `make check` passed Terraform
+  formatting, read-only initialization, validation, and the complete mocked
+  suite with the pinned Terraform 1.15.5 binary.
+- Six hostile resource-tag count mutations were rejected across the count
+  predicate, `Name` deduplication, rejection coverage, maintained
+  documentation, suite-count contract, and completed-plan status.
 
 ## Risks
 

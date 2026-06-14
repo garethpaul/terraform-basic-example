@@ -91,8 +91,9 @@ variable "resource_tags" {
         length(key) <= 128 &&
         length(value) <= 256 &&
         !startswith(lower(key), "aws:")
-      ])
+      ]) &&
+      length(setunion(toset(keys(var.resource_tags)), toset(["Name"]))) <= 50
     )
-    error_message = "resource_tags must contain non-empty keys up to 128 characters and values up to 256 characters and must not use the reserved aws: prefix."
+    error_message = "resource_tags must produce at most 50 final tags including Name, contain non-empty keys up to 128 characters and values up to 256 characters, and not use the reserved aws: prefix."
   }
 }

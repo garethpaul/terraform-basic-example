@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Added resource tag count validation that reserves the resource-owned `Name`
+  key and rejects final EC2 tag sets above 50 entries.
 - Added resource tag length validation for EC2's 128-character key and
   256-character value limits.
 - Added AMI ID length validation for the legacy 8-character and current
