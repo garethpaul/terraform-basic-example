@@ -74,6 +74,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   reject fractional port values before user data or security groups reach AWS.
 - AMI ID length validation accepts only the legacy 8-character or current
   17-character lowercase hexadecimal EC2 identifier widths.
+- Resource tag length validation rejects keys over 128 characters and values
+  over 256 characters before provider planning.
 - Native Terraform tests use the mocked provider to prove the default creates
   no inbound HTTP rule, explicit canonical IPv4 CIDRs opt in to one rule, and
   malformed, IPv6, or host-bit-bearing ranges are rejected before they can
@@ -152,6 +154,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   repository-root selection across all Make aliases.
 - See `docs/plans/2026-06-14-ami-id-length-validation.md` for mocked plan
   coverage of accepted and structurally invalid EC2 image identifiers.
+- See `docs/plans/2026-06-14-resource-tag-length-validation.md` for mocked
+  EC2 tag boundary coverage.
 
 ## Contributing
 

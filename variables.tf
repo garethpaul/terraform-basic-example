@@ -88,9 +88,11 @@ variable "resource_tags" {
         for key, value in var.resource_tags :
         length(trimspace(key)) > 0 &&
         length(trimspace(value)) > 0 &&
+        length(key) <= 128 &&
+        length(value) <= 256 &&
         !startswith(lower(key), "aws:")
       ])
     )
-    error_message = "resource_tags must contain non-empty keys and values and must not use the reserved aws: prefix."
+    error_message = "resource_tags must contain non-empty keys up to 128 characters and values up to 256 characters and must not use the reserved aws: prefix."
   }
 }

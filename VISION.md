@@ -19,6 +19,7 @@ Priority:
 - Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate instance type overrides before provider planning
 - Preserve AMI ID length validation for legacy and current EC2 identifiers
+- Preserve resource tag length validation before provider planning
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
 - Validate server ports as whole numbers before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance

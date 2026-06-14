@@ -21,6 +21,7 @@ PRIVATE_INGRESS_PLAN = DOCS_PLANS / "2026-06-13-private-ingress-default.md"
 CANONICAL_IPV4_PLAN = DOCS_PLANS / "2026-06-13-canonical-ipv4-ingress-cidrs.md"
 ROOT_OVERRIDE_PLAN = DOCS_PLANS / "2026-06-14-make-root-override-protection.md"
 AMI_ID_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-ami-id-length-validation.md"
+TAG_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-length-validation.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -114,6 +115,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-14-make-root-override-protection.md is missing")
     if not AMI_ID_LENGTH_PLAN.exists():
         errors.append("docs/plans/2026-06-14-ami-id-length-validation.md is missing")
+    if not TAG_LENGTH_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-resource-tag-length-validation.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -139,6 +142,16 @@ def hygiene_checks():
         ):
             if evidence not in ami_plan:
                 errors.append(f"{AMI_ID_LENGTH_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
+    if TAG_LENGTH_PLAN.exists():
+        tag_plan = TAG_LENGTH_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile resource-tag length mutations were rejected",
+        ):
+            if evidence not in tag_plan:
+                errors.append(f"{TAG_LENGTH_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
 
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
     gitignore_lines = {line.strip() for line in gitignore.splitlines()}
@@ -186,6 +199,8 @@ def hygiene_checks():
             errors.append(f"{doc_path} must document canonical IPv4 CIDRs")
         if "ami id length validation" not in read_text(doc_path).lower():
             errors.append(f"{doc_path} must document AMI ID length validation")
+        if "resource tag length validation" not in read_text(doc_path).lower():
+            errors.append(f"{doc_path} must document resource tag length validation")
 
     makefile = read_text("Makefile")
     root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
@@ -226,6 +241,8 @@ def hygiene_checks():
         errors.append("README must index Make root override protection evidence")
     if "docs/plans/2026-06-14-ami-id-length-validation.md" not in read_text("README.md"):
         errors.append("README must index AMI ID length validation evidence")
+    if "docs/plans/2026-06-14-resource-tag-length-validation.md" not in read_text("README.md"):
+        errors.append("README must index resource tag length validation evidence")
 
     return errors
 
@@ -362,6 +379,8 @@ def config_checks():
         "length(var.resource_tags) > 0",
         "length(trimspace(key)) > 0",
         "length(trimspace(value)) > 0",
+        "length(key) <= 128",
+        "length(value) <= 256",
         '!startswith(lower(key), "aws:")',
     ):
         if fragment not in variables:
@@ -386,13 +405,20 @@ def config_checks():
         'run "reject_blank_resource_tag_key"',
         'run "reject_blank_resource_tag_value"',
         'run "reject_reserved_resource_tag_key"',
+        'run "accept_resource_tag_length_boundaries"',
+        'run "reject_overlong_resource_tag_key"',
+        'run "reject_overlong_resource_tag_value"',
+        'range(128)',
+        'range(256)',
+        'range(129)',
+        'range(257)',
         "resource_tags = {}",
         '"aws:owner" = "platform"',
     ):
         if fragment not in resource_tags_test:
             errors.append(f"resource tags Terraform test is missing contract: {fragment}")
-    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 4:
-        errors.append("resource tags Terraform tests must expect all four validation failures")
+    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 6:
+        errors.append("resource tags Terraform tests must expect all six validation failures")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):
