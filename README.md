@@ -100,7 +100,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   commit-pinned Node 24 actions.
 - `main.tf` constrains Terraform to supported 1.x releases and the AWS provider
   to 6.x. The validation gate treats `.terraform.lock.hcl` as read-only and
-  currently requires the reviewed AWS provider 6.49.0 selection and registry
+  currently requires the reviewed AWS provider 6.50.0 selection and registry
   checksums. Update the lockfile and static contract together when changing
   provider versions.
 

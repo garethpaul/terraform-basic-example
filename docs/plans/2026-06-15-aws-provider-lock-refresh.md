@@ -1,6 +1,6 @@
 # AWS Provider Lock Refresh
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -58,4 +58,14 @@ while preserving the module's existing compatibility range and behavior.
 
 ## Completion Evidence
 
-Pending implementation and validation.
+- Terraform 1.15.6 installed the signed AWS provider 6.50.0 release, then
+  read-only initialization reused that exact lock selection.
+- Formatting, validation, and all 25 credential-free mocked Terraform plans
+  passed with zero failures.
+- repository and external-directory `make check` passed with the pinned
+  Terraform 1.15.6 executable.
+- Six hostile provider-lock mutations were rejected: stale selection,
+  canonical checksum drift, missing registry checksum, reviewed version and
+  exact-lock-digest contract drift, and writable initialization.
+- The final audit found no Terraform state, plan files, credentials, or
+  tracked generated artifacts; no infrastructure apply was run.

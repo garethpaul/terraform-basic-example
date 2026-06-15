@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Refreshed the reproducible AWS provider lock to 6.50.0 and tightened static
+  validation around the reviewed canonical and cross-platform checksums.
+
 ## 2026-06-14
 
 - Added resource tag count validation that reserves the resource-owned `Name`

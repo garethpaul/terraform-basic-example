@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import re
 import subprocess
 import sys
@@ -23,6 +24,7 @@ ROOT_OVERRIDE_PLAN = DOCS_PLANS / "2026-06-14-make-root-override-protection.md"
 AMI_ID_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-ami-id-length-validation.md"
 TAG_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-length-validation.md"
 TAG_COUNT_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-count-validation.md"
+AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -69,6 +71,8 @@ jobs:
       - name: Run baseline
         run: make check
 """
+EXPECTED_AWS_PROVIDER_VERSION = "6.50.0"
+EXPECTED_AWS_PROVIDER_LOCK_SHA256 = "ad5a75825364466ea492968c6320e612471757a3f4fe2838ef478262c61d183e"
 
 
 def read_text(relative_path):
@@ -120,6 +124,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-14-resource-tag-length-validation.md is missing")
     if not TAG_COUNT_PLAN.exists():
         errors.append("docs/plans/2026-06-14-resource-tag-count-validation.md is missing")
+    if not AWS_PROVIDER_LOCK_PLAN.exists():
+        errors.append("docs/plans/2026-06-15-aws-provider-lock-refresh.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -166,6 +172,16 @@ def hygiene_checks():
             if evidence not in tag_count_plan:
                 errors.append(f"{TAG_COUNT_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
 
+    if AWS_PROVIDER_LOCK_PLAN.exists():
+        provider_lock_plan = AWS_PROVIDER_LOCK_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile provider-lock mutations were rejected",
+        ):
+            if evidence not in provider_lock_plan:
+                errors.append(f"{AWS_PROVIDER_LOCK_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
     gitignore_lines = {line.strip() for line in gitignore.splitlines()}
     for pattern in (".terraform/", "*.tfstate", "*.tfstate.*", "*.tfvars", "crash.log"):
@@ -192,18 +208,20 @@ def hygiene_checks():
         lock_file = LOCK_FILE.read_text(encoding="utf-8")
         if 'provider "registry.terraform.io/hashicorp/aws"' not in lock_file:
             errors.append(".terraform.lock.hcl must pin the hashicorp/aws provider")
-        if 'version     = "6.49.0"' not in lock_file:
-            errors.append(".terraform.lock.hcl must select the reviewed AWS provider 6.49.0")
+        if f'version     = "{EXPECTED_AWS_PROVIDER_VERSION}"' not in lock_file:
+            errors.append(
+                ".terraform.lock.hcl must select the reviewed AWS provider "
+                f"{EXPECTED_AWS_PROVIDER_VERSION}"
+            )
         if 'constraints = ">= 6.0.0, < 7.0.0"' not in lock_file:
             errors.append(
                 ".terraform.lock.hcl must preserve the reviewed AWS provider constraint"
             )
-        if not re.search(r'^\s+"h1:[A-Za-z0-9+/=]+",$', lock_file, re.MULTILINE):
+        lock_sha256 = hashlib.sha256(lock_file.encode("utf-8")).hexdigest()
+        if lock_sha256 != EXPECTED_AWS_PROVIDER_LOCK_SHA256:
             errors.append(
-                ".terraform.lock.hcl must include a canonical provider package checksum"
+                ".terraform.lock.hcl must match the reviewed provider selection and checksum set"
             )
-        if len(re.findall(r'^\s+"zh:[0-9a-f]{64}",$', lock_file, re.MULTILINE)) < 10:
-            errors.append(".terraform.lock.hcl must include registry checksums for supported platforms")
 
     for doc_path in ("README.md", "SECURITY.md", "VISION.md", "CHANGES.md"):
         if "GitHub Actions" not in read_text(doc_path):
