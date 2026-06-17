@@ -40,8 +40,9 @@ data "aws_ssm_parameter" "al2023_ami" {
 resource "aws_instance" "example" {
   ami = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].insecure_value
 
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.instance.id]
+  instance_type               = var.instance_type
+  associate_public_ip_address = length(var.allowed_cidr_blocks) > 0
+  vpc_security_group_ids      = [aws_security_group.instance.id]
 
   user_data                   = <<-EOF
               #!/bin/bash

@@ -58,11 +58,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   workload-specific image; explicit overrides bypass that lookup and retain
   structural validation. Override `aws_region` and `instance_type` as needed
   for availability and cost.
-- Inbound HTTP is disabled by default. Set `allowed_cidr_blocks` explicitly to
-  reviewed canonical IPv4 CIDRs when access is needed, preferably a narrow `/32`
-  for the caller rather than `0.0.0.0/0`. For example, set
+- Inbound HTTP and public IPv4 assignment are disabled by default. Set
+  `allowed_cidr_blocks` explicitly to reviewed canonical IPv4 CIDRs when access
+  is needed, preferably a narrow `/32` for the caller rather than `0.0.0.0/0`.
+  For example, set
   `TF_VAR_allowed_cidr_blocks='["198.51.100.10/32"]'` before planning, replacing
-  the reserved documentation address with the caller's public IP.
+  the reserved documentation address with the caller's public IP. This opts in
+  to both settings; the selected subnet must still provide routing for
+  end-to-end reachability, and a public IPv4 address may incur AWS charges.
 
 ## Testing and Verification
 
@@ -168,6 +171,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   provider 6.50.0 selection and canonical lock checksums.
 - See `docs/plans/2026-06-17-al2023-default-ami.md` for the region-local Amazon
   Linux 2023 default AMI and explicit override behavior.
+- See `docs/plans/2026-06-17-public-ip-opt-in.md` for deterministic public IPv4
+  assignment coupled to the existing ingress opt-in.
 
 ## Contributing
 

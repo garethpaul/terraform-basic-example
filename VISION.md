@@ -23,6 +23,8 @@ Priority:
 - Preserve resource tag length validation before provider planning
 - Preserve resource tag count validation after resource-owned tag merging
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
+- Keep public IPv4 assignment disabled with the default no-ingress inputs and
+  couple public address requests to the existing ingress opt-in
 - Validate server ports as whole numbers before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance
 - Keep EC2 metadata response hop limits explicit for the single-instance demo

@@ -36,6 +36,8 @@
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
 - Preserve the region-local Amazon Linux 2023 public-parameter default and keep
   explicit `ami_id` overrides query-free.
+- Preserve the shared `allowed_cidr_blocks` opt-in for both inbound HTTP and
+  public IPv4 assignment; do not add a second exposure toggle that can drift.
 
 ## PR / change guidance
 

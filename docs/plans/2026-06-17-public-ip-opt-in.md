@@ -1,6 +1,6 @@
 # Make Public IPv4 Assignment Explicitly Opt In
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -96,6 +96,20 @@ launch setting overrides the subnet's default addressing behavior:
 - Audit the exact diff, lockfile digest, state/plan files, generated provider
   artifacts, Python bytecode, and credential patterns.
 - Require one bounded exact-head hosted check snapshot after push.
+
+## Verification Results
+
+- Focused configuration checks and the public IPv4 contract passed; all five
+  omitted, unconditional, inverted, and input-independent mutations were
+  rejected.
+- Repository and external-directory `make check` passed with the static
+  fallback because Terraform is not installed on `PATH`.
+- Terraform 1.15.5 formatting passed. Provider-backed tests were not claimed
+  locally because the immutable AWS provider 6.50.0 package was absent from
+  that toolchain's cache; the hosted Terraform 1.15.6 check remains the exact
+  native verification authority.
+- No AWS apply, account access, state persistence, or real infrastructure
+  operation was performed.
 
 ## Scope Boundaries
 

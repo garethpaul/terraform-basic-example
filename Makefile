@@ -9,6 +9,7 @@ lint:
 
 test:
 	$(PYTHON) "$(ROOT)/scripts/check-terraform-source.py" --mode config
+	$(PYTHON) "$(ROOT)/scripts/test_public_ip_assignment_contract.py"
 
 build: lint
 	@if command -v "$(TERRAFORM)" >/dev/null 2>&1; then \

@@ -7,6 +7,11 @@ run "accept_private_default" {
     condition     = length(aws_security_group.instance.ingress) == 0
     error_message = "The default configuration must not create an inbound HTTP rule."
   }
+
+  assert {
+    condition     = aws_instance.example.associate_public_ip_address == false
+    error_message = "The default configuration must not request a public IPv4 address."
+  }
 }
 
 run "accept_explicit_ipv4_cidr_blocks" {
@@ -19,6 +24,11 @@ run "accept_explicit_ipv4_cidr_blocks" {
   assert {
     condition     = length(aws_security_group.instance.ingress) == 1
     error_message = "Explicit IPv4 CIDRs must create one HTTP ingress block."
+  }
+
+  assert {
+    condition     = aws_instance.example.associate_public_ip_address == true
+    error_message = "Explicit IPv4 CIDRs must request a public IPv4 address."
   }
 }
 

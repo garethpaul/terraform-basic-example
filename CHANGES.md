@@ -2,6 +2,8 @@
 
 ## 2026-06-17
 
+- Coupled EC2 public IPv4 assignment to the existing validated ingress opt-in,
+  keeping the no-ingress default independent of subnet auto-assignment settings.
 - Replaced the obsolete region-specific image default with the latest
   region-local Amazon Linux 2023 default AMI and an override-safe public
   parameter lookup, using the AL2023 system Python server for the demo page.

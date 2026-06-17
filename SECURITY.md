@@ -63,6 +63,11 @@ For infrastructure examples, report overly permissive access controls, exposed s
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
+The default Terraform inputs request neither inbound HTTP nor a public IPv4
+address. Supplying `allowed_cidr_blocks` opts in to both settings; restrict the
+CIDRs to trusted callers, confirm the selected subnet's routing separately, and
+account for public IPv4 charges before applying the example.
+
 ## Safe Research Guidelines
 
 Good-faith research is welcome when it stays within these boundaries:

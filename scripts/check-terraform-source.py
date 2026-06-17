@@ -26,6 +26,7 @@ TAG_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-length-validation.md"
 TAG_COUNT_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-count-validation.md"
 AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
 AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
+PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -129,6 +130,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-15-aws-provider-lock-refresh.md is missing")
     if not AL2023_DEFAULT_AMI_PLAN.exists():
         errors.append("docs/plans/2026-06-17-al2023-default-ami.md is missing")
+    if not PUBLIC_IP_OPT_IN_PLAN.exists():
+        errors.append("docs/plans/2026-06-17-public-ip-opt-in.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -285,6 +288,7 @@ def hygiene_checks():
         "init -backend=false -lockfile=readonly",
         "validate -no-color",
         "test -no-color",
+        '$(PYTHON) "$(ROOT)/scripts/test_public_ip_assignment_contract.py"',
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
@@ -299,6 +303,8 @@ def hygiene_checks():
         errors.append("README must index resource tag count validation evidence")
     if "docs/plans/2026-06-17-al2023-default-ami.md" not in read_text("README.md"):
         errors.append("README must index region-local Amazon Linux 2023 default AMI evidence")
+    if "docs/plans/2026-06-17-public-ip-opt-in.md" not in read_text("README.md"):
+        errors.append("README must index public IPv4 opt-in evidence")
 
     return errors
 
@@ -385,9 +391,11 @@ def config_checks():
     if 'length(regexall(":", cidr)) == 0' in variables:
         errors.append("allowed_cidr_blocks must use Terraform IPv4 parsing instead of string heuristics")
     for fragment in (
-        "Inbound HTTP is disabled by default.",
+        "Inbound HTTP and public IPv4 assignment are disabled by default.",
         "TF_VAR_allowed_cidr_blocks",
         "preferably a narrow `/32`",
+        "selected subnet must still provide routing",
+        "public IPv4 address may incur AWS charges",
     ):
         if fragment not in readme:
             errors.append(f"README ingress guidance is missing contract: {fragment}")
@@ -395,6 +403,7 @@ def config_checks():
         "The default plan creates no inbound HTTP rule",
         "reviewed IPv4 CIDRs",
         "`0.0.0.0/0` access",
+        "neither inbound HTTP nor a public IPv4",
     ):
         if fragment not in security:
             errors.append(f"SECURITY ingress guidance is missing contract: {fragment}")
@@ -521,6 +530,17 @@ def config_checks():
         errors.append("aws_instance.example root block device must be encrypted")
     if not re.search(r'user_data_replace_on_change\s+=\s+true', main):
         errors.append("aws_instance.example must replace on user_data changes")
+    if not re.search(
+        r"associate_public_ip_address\s+=\s+length\(var\.allowed_cidr_blocks\)\s*>\s*0",
+        main,
+    ):
+        errors.append("aws_instance.example public IPv4 assignment must follow allowed_cidr_blocks")
+    for fragment in (
+        "aws_instance.example.associate_public_ip_address == false",
+        "aws_instance.example.associate_public_ip_address == true",
+    ):
+        if fragment not in allowed_cidr_blocks_test:
+            errors.append(f"allowed CIDR Terraform test is missing public IPv4 contract: {fragment}")
 
     return errors
 
