@@ -26,20 +26,28 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_ssm_parameter" "al2023_ami" {
+  count = var.ami_id == null ? 1 : 0
+
+  name            = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  with_decryption = false
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # DEPLOY A SINGLE EC2 INSTANCE
 # ---------------------------------------------------------------------------------------------------------------------
 
 resource "aws_instance" "example" {
-  # Default AMI is Ubuntu Server 18.04 LTS in us-east-2; override ami_id for other regions.
-  ami                    = var.ami_id
+  ami = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].insecure_value
+
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.instance.id]
 
   user_data                   = <<-EOF
               #!/bin/bash
-              echo "Hello, World" > index.html
-              nohup busybox httpd -f -p "${var.server_port}" &
+              mkdir -p /var/www/html
+              echo "Hello, World" > /var/www/html/index.html
+              nohup /usr/bin/python3 -m http.server "${var.server_port}" --directory /var/www/html >/var/log/terraform-example-http.log 2>&1 &
               EOF
   user_data_replace_on_change = true
 

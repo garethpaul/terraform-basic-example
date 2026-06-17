@@ -34,6 +34,8 @@
 - Native Terraform tests live under `tests/`; treat `make check` as the minimum baseline.
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
+- Preserve the region-local Amazon Linux 2023 public-parameter default and keep
+  explicit `ami_id` overrides query-free.
 
 ## PR / change guidance
 

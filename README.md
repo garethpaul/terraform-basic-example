@@ -53,9 +53,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Running or Using the Project
 
 - Use `terraform plan` after `terraform init` to inspect infrastructure changes before applying anything.
-- Override `aws_region`, `ami_id`, and `instance_type` when planning outside
-  the sample defaults; AMI IDs are region-specific and instance type changes
-  can affect cost.
+- The region-local Amazon Linux 2023 default AMI is resolved through AWS's
+  public Systems Manager parameter. Set `ami_id` only for an architecture- or
+  workload-specific image; explicit overrides bypass that lookup and retain
+  structural validation. Override `aws_region` and `instance_type` as needed
+  for availability and cost.
 - Inbound HTTP is disabled by default. Set `allowed_cidr_blocks` explicitly to
   reviewed canonical IPv4 CIDRs when access is needed, preferably a narrow `/32`
   for the caller rather than `0.0.0.0/0`. For example, set
@@ -74,6 +76,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   reject fractional port values before user data or security groups reach AWS.
 - AMI ID length validation accepts only the legacy 8-character or current
   17-character lowercase hexadecimal EC2 identifier widths.
+- The region-local Amazon Linux 2023 default AMI uses `/usr/bin/python3` to
+  serve the example page instead of relying on an obsolete image or BusyBox.
 - Resource tag length validation rejects keys over 128 characters and values
   over 256 characters before provider planning.
 - Resource tag count validation reserves the resource-owned `Name` key and
@@ -160,6 +164,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
   EC2 tag boundary coverage.
 - See `docs/plans/2026-06-14-resource-tag-count-validation.md` for mocked
   post-merge EC2 tag-count coverage.
+- See `docs/plans/2026-06-15-aws-provider-lock-refresh.md` for the reviewed AWS
+  provider 6.50.0 selection and canonical lock checksums.
+- See `docs/plans/2026-06-17-al2023-default-ami.md` for the region-local Amazon
+  Linux 2023 default AMI and explicit override behavior.
 
 ## Contributing
 

@@ -22,12 +22,13 @@ variable "aws_region" {
 }
 
 variable "ami_id" {
-  description = "AMI ID to launch for the example web server"
+  description = "Optional AMI ID override; null selects the latest regional Amazon Linux 2023 x86_64 image"
   type        = string
-  default     = "ami-0c55b159cbfafe1f0"
+  default     = null
+  nullable    = true
 
   validation {
-    condition     = can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))
+    condition     = var.ami_id == null || can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))
     error_message = "ami_id must use an 8- or 17-character lowercase hexadecimal AWS AMI ID."
   }
 }

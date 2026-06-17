@@ -39,6 +39,9 @@ Helpful reports include:
   data or security-group values can reach an AWS plan.
 - AMI ID length validation rejects structurally impossible image identifiers
   before provider or AWS API interaction.
+- The region-local Amazon Linux 2023 default AMI is read from an AWS-owned
+  public parameter; explicit AMI overrides bypass the lookup and remain
+  structurally validated.
 - Resource tag length validation rejects overlong keys and values before
   provider or AWS API interaction.
 - Resource tag count validation includes the resource-owned `Name` key and

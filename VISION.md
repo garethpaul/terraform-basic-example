@@ -19,6 +19,7 @@ Priority:
 - Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate instance type overrides before provider planning
 - Preserve AMI ID length validation for legacy and current EC2 identifiers
+- Keep a region-local Amazon Linux 2023 default AMI with query-free overrides
 - Preserve resource tag length validation before provider planning
 - Preserve resource tag count validation after resource-owned tag merging
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
@@ -38,7 +39,7 @@ Next priorities:
 
 - Add quickstart and destroy instructions to the README
 - Document expected AWS costs and required credentials
-- Document region-specific AMI selection and safer demo defaults
+- Document architecture-specific AMI overrides and update expectations
 - Add notes about restricting ingress beyond demo use
 
 Contribution rules:

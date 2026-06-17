@@ -25,6 +25,7 @@ AMI_ID_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-ami-id-length-validation.md"
 TAG_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-length-validation.md"
 TAG_COUNT_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-count-validation.md"
 AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
+AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -126,6 +127,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-14-resource-tag-count-validation.md is missing")
     if not AWS_PROVIDER_LOCK_PLAN.exists():
         errors.append("docs/plans/2026-06-15-aws-provider-lock-refresh.md is missing")
+    if not AL2023_DEFAULT_AMI_PLAN.exists():
+        errors.append("docs/plans/2026-06-17-al2023-default-ami.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -182,6 +185,19 @@ def hygiene_checks():
             if evidence not in provider_lock_plan:
                 errors.append(f"{AWS_PROVIDER_LOCK_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
 
+    if AL2023_DEFAULT_AMI_PLAN.exists():
+        al2023_plan = AL2023_DEFAULT_AMI_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile AL2023 default AMI mutations were rejected",
+            "generated-artifact and credential-pattern audits passed",
+        ):
+            if evidence not in al2023_plan:
+                errors.append(
+                    f"{AL2023_DEFAULT_AMI_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}"
+                )
+
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
     gitignore_lines = {line.strip() for line in gitignore.splitlines()}
     for pattern in (".terraform/", "*.tfstate", "*.tfstate.*", "*.tfvars", "crash.log"):
@@ -224,16 +240,19 @@ def hygiene_checks():
             )
 
     for doc_path in ("README.md", "SECURITY.md", "VISION.md", "CHANGES.md"):
-        if "GitHub Actions" not in read_text(doc_path):
+        document = re.sub(r"\s+", " ", read_text(doc_path))
+        if "GitHub Actions" not in document:
             errors.append(f"{doc_path} must document the GitHub Actions check")
-        if "canonical ipv4 cidr" not in read_text(doc_path).lower():
+        if "canonical ipv4 cidr" not in document.lower():
             errors.append(f"{doc_path} must document canonical IPv4 CIDRs")
-        if "ami id length validation" not in read_text(doc_path).lower():
+        if "ami id length validation" not in document.lower():
             errors.append(f"{doc_path} must document AMI ID length validation")
-        if "resource tag length validation" not in read_text(doc_path).lower():
+        if "resource tag length validation" not in document.lower():
             errors.append(f"{doc_path} must document resource tag length validation")
-        if "resource tag count validation" not in read_text(doc_path).lower():
+        if "resource tag count validation" not in document.lower():
             errors.append(f"{doc_path} must document resource tag count validation")
+        if "region-local amazon linux 2023 default ami" not in document.lower():
+            errors.append(f"{doc_path} must document the region-local Amazon Linux 2023 default AMI")
 
     makefile = read_text("Makefile")
     root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
@@ -278,6 +297,8 @@ def hygiene_checks():
         errors.append("README must index resource tag length validation evidence")
     if "docs/plans/2026-06-14-resource-tag-count-validation.md" not in read_text("README.md"):
         errors.append("README must index resource tag count validation evidence")
+    if "docs/plans/2026-06-17-al2023-default-ami.md" not in read_text("README.md"):
+        errors.append("README must index region-local Amazon Linux 2023 default AMI evidence")
 
     return errors
 
@@ -307,10 +328,28 @@ def config_checks():
         errors.append("provider region must be configurable")
     if "region = var.aws_region" not in main:
         errors.append("provider region must reference var.aws_region")
-    if re.search(r'ami\s+=\s+"ami-[0-9a-f]+"', main):
-        errors.append("instance AMI must be configurable")
-    if "ami                    = var.ami_id" not in main:
-        errors.append("instance AMI must reference var.ami_id")
+    for fragment in (
+        'data "aws_ssm_parameter" "al2023_ami"',
+        "count = var.ami_id == null ? 1 : 0",
+        'name            = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"',
+        "with_decryption = false",
+        "ami = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].insecure_value",
+    ):
+        if fragment not in main:
+            errors.append(f"region-local AL2023 AMI selection is missing contract: {fragment}")
+    if "data.aws_ssm_parameter.al2023_ami[0].value" in main:
+        errors.append("public AL2023 AMI selection must not propagate a sensitive parameter value")
+    if "ami-0c55b159cbfafe1f0" in main or "Ubuntu Server 18.04" in main:
+        errors.append("instance AMI must not retain the obsolete Ubuntu 18.04 default")
+    for fragment in (
+        "mkdir -p /var/www/html",
+        'echo "Hello, World" > /var/www/html/index.html',
+        'nohup /usr/bin/python3 -m http.server "${var.server_port}" --directory /var/www/html',
+    ):
+        if fragment not in main:
+            errors.append(f"AL2023 user data is missing contract: {fragment}")
+    if "busybox httpd" in main:
+        errors.append("AL2023 user data must not depend on BusyBox")
     if re.search(r'instance_type\s+=\s+"[^"]+"', main):
         errors.append("instance type must be configurable")
     if not re.search(r'instance_type\s+=\s+var\.instance_type', main):
@@ -382,18 +421,31 @@ def config_checks():
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:
         errors.append("variables.tf must define and validate ami_id")
+    if 'default     = null' not in variables or 'nullable    = true' not in variables:
+        errors.append("ami_id must default to an explicit nullable override")
+    if 'var.ami_id == null || can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
+        errors.append("ami_id must permit null while validating explicit identifiers")
     if 'can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
         errors.append("ami_id must require an 8- or 17-character lowercase hexadecimal suffix")
     for fragment in (
-        'mock_provider "aws" {}',
-        'run "accept_default_current_ami_id"',
+        'mock_provider "aws" {',
+        'mock_data "aws_ssm_parameter"',
+        'insecure_value = "ami-0123456789abcdef0"',
+        'run "accept_region_local_al2023_default"',
         'run "accept_legacy_ami_id"',
+        'run "accept_current_ami_id"',
         'run "reject_short_ami_id"',
         'run "reject_intermediate_length_ami_id"',
         'run "reject_long_ami_id"',
         'run "reject_uppercase_ami_id"',
         'run "reject_malformed_ami_id"',
         'ami_id = "ami-1234abcd"',
+        'ami_id = "ami-0fedcba9876543210"',
+        'length(data.aws_ssm_parameter.al2023_ami) == 1',
+        'aws_instance.example.ami == "ami-0123456789abcdef0"',
+        'length(data.aws_ssm_parameter.al2023_ami) == 0',
+        'aws_instance.example.ami == "ami-1234abcd"',
+        'aws_instance.example.ami == "ami-0fedcba9876543210"',
         'expect_failures = [var.ami_id]',
     ):
         if fragment not in ami_id_test:

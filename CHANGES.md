@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-17
+
+- Replaced the obsolete region-specific image default with the latest
+  region-local Amazon Linux 2023 default AMI and an override-safe public
+  parameter lookup, using the AL2023 system Python server for the demo page.
+
 ## 2026-06-15
 
 - Refreshed the reproducible AWS provider lock to 6.50.0 and tightened static
