@@ -37,6 +37,10 @@ Helpful reports include:
   configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
+- Defaulted inputs other than the intentional `ami_id` override are
+  non-nullable, preventing explicit `null` values from erasing the reviewed
+  region, instance type, listener port, private ingress default, public IPv4
+  boundary, or ownership tags.
 - AMI ID length validation rejects structurally impossible image identifiers
   before provider or AWS API interaction.
 - The region-local Amazon Linux 2023 default AMI is read from an AWS-owned

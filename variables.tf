@@ -14,6 +14,7 @@ variable "aws_region" {
   description = "AWS region where the example resources will be created"
   type        = string
   default     = "us-east-2"
+  nullable    = false
 
   validation {
     condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]+$", var.aws_region))
@@ -37,6 +38,7 @@ variable "instance_type" {
   description = "EC2 instance type for the example web server"
   type        = string
   default     = "t2.micro"
+  nullable    = false
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))
@@ -48,6 +50,7 @@ variable "server_port" {
   description = "The port the server will use for HTTP requests"
   type        = number
   default     = 8080
+  nullable    = false
 
   validation {
     condition = (
@@ -63,6 +66,7 @@ variable "allowed_cidr_blocks" {
   description = "IPv4 CIDR blocks allowed to reach the example web server; leave empty to disable inbound HTTP"
   type        = list(string)
   default     = []
+  nullable    = false
 
   validation {
     condition = alltrue([
@@ -77,6 +81,7 @@ variable "allowed_cidr_blocks" {
 variable "resource_tags" {
   description = "Common tags applied to example resources for ownership and cleanup"
   type        = map(string)
+  nullable    = false
   default = {
     ManagedBy = "terraform"
     Project   = "terraform-basic-example"

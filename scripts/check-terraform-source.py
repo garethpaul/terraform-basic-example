@@ -27,12 +27,14 @@ TAG_COUNT_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-count-validation.md"
 AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
 AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
 PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
+NON_NULL_INPUTS_PLAN = DOCS_PLANS / "2026-06-18-non-null-default-inputs.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
 RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
 ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
 AMI_ID_TEST = ROOT / "tests" / "ami_id.tftest.hcl"
+NON_NULL_INPUTS_TEST = ROOT / "tests" / "non_null_inputs.tftest.hcl"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -79,6 +81,16 @@ EXPECTED_AWS_PROVIDER_LOCK_SHA256 = "ad5a75825364466ea492968c6320e612471757a3f4f
 
 def read_text(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8")
+
+
+def variable_block(variables, name):
+    marker = f'variable "{name}" {{'
+    start = variables.find(marker)
+    if start == -1:
+        return ""
+    next_variable = variables.find('\nvariable "', start + len(marker))
+    end = next_variable if next_variable != -1 else len(variables)
+    return variables[start:end]
 
 
 def tracked_files():
@@ -132,6 +144,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-17-al2023-default-ami.md is missing")
     if not PUBLIC_IP_OPT_IN_PLAN.exists():
         errors.append("docs/plans/2026-06-17-public-ip-opt-in.md is missing")
+    if not NON_NULL_INPUTS_PLAN.exists():
+        errors.append("docs/plans/2026-06-18-non-null-default-inputs.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -140,6 +154,8 @@ def hygiene_checks():
         errors.append("tests/allowed_cidr_blocks.tftest.hcl is missing")
     if not AMI_ID_TEST.exists():
         errors.append("tests/ami_id.tftest.hcl is missing")
+    if not NON_NULL_INPUTS_TEST.exists():
+        errors.append("tests/non_null_inputs.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -305,6 +321,8 @@ def hygiene_checks():
         errors.append("README must index region-local Amazon Linux 2023 default AMI evidence")
     if "docs/plans/2026-06-17-public-ip-opt-in.md" not in read_text("README.md"):
         errors.append("README must index public IPv4 opt-in evidence")
+    if "docs/plans/2026-06-18-non-null-default-inputs.md" not in read_text("README.md"):
+        errors.append("README must index non-null default input evidence")
 
     return errors
 
@@ -323,6 +341,11 @@ def config_checks():
         else ""
     )
     ami_id_test = read_text("tests/ami_id.tftest.hcl") if AMI_ID_TEST.exists() else ""
+    non_null_inputs_test = (
+        read_text("tests/non_null_inputs.tftest.hcl")
+        if NON_NULL_INPUTS_TEST.exists()
+        else ""
+    )
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -436,6 +459,15 @@ def config_checks():
         errors.append("ami_id must permit null while validating explicit identifiers")
     if 'can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
         errors.append("ami_id must require an 8- or 17-character lowercase hexadecimal suffix")
+    for non_null_input in (
+        "aws_region",
+        "instance_type",
+        "server_port",
+        "allowed_cidr_blocks",
+        "resource_tags",
+    ):
+        if "nullable    = false" not in variable_block(variables, non_null_input):
+            errors.append(f"{non_null_input} must be non-nullable so explicit null cannot erase its default")
     for fragment in (
         'mock_provider "aws" {',
         'mock_data "aws_ssm_parameter"',
@@ -461,6 +493,24 @@ def config_checks():
             errors.append(f"AMI ID Terraform test is missing contract: {fragment}")
     if ami_id_test.count("expect_failures = [var.ami_id]") != 5:
         errors.append("AMI ID Terraform tests must expect all five invalid identifier failures")
+    for fragment in (
+        'mock_provider "aws" {',
+        'mock_data "aws_ssm_parameter"',
+        'run "accept_explicit_nulls_as_defaulted_inputs"',
+        "aws_region          = null",
+        "instance_type       = null",
+        "server_port         = null",
+        "allowed_cidr_blocks = null",
+        "resource_tags       = null",
+        "ami_id              = null",
+        'aws_instance.example.ami == "ami-0123456789abcdef0"',
+        'aws_instance.example.instance_type == "t2.micro"',
+        "aws_instance.example.associate_public_ip_address == false",
+        "length(aws_security_group.instance.ingress) == 0",
+        'aws_instance.example.tags.ManagedBy == "terraform"',
+    ):
+        if fragment not in non_null_inputs_test:
+            errors.append(f"non-null input Terraform test is missing contract: {fragment}")
     if 'variable "instance_type"' not in variables or "var.instance_type" not in variables:
         errors.append("variables.tf must define and validate instance_type")
     if 'can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))' not in variables:

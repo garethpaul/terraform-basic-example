@@ -20,6 +20,8 @@ Priority:
 - Validate instance type overrides before provider planning
 - Preserve AMI ID length validation for legacy and current EC2 identifiers
 - Keep a region-local Amazon Linux 2023 default AMI with query-free overrides
+- Keep defaulted inputs non-nullable except for the intentional `ami_id`
+  override path
 - Preserve resource tag length validation before provider planning
 - Preserve resource tag count validation after resource-owned tag merging
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS

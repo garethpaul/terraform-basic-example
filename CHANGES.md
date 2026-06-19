@@ -7,6 +7,9 @@
 - Replaced the obsolete region-specific image default with the latest
   region-local Amazon Linux 2023 default AMI and an override-safe public
   parameter lookup, using the AL2023 system Python server for the demo page.
+- Marked all non-AMI defaulted inputs non-nullable so explicit `null` values
+  cannot erase the documented defaults for region, instance type, port,
+  ingress, public IPv4 assignment, or ownership tags.
 
 ## 2026-06-15
 

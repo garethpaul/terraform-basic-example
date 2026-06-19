@@ -77,6 +77,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   same check can be invoked from outside the repository.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
+- Defaulted inputs other than `ami_id` are non-nullable, so explicit `null`
+  values preserve the documented defaults instead of propagating into provider
+  configuration, network exposure decisions, or tag merges.
 - AMI ID length validation accepts only the legacy 8-character or current
   17-character lowercase hexadecimal EC2 identifier widths.
 - The region-local Amazon Linux 2023 default AMI uses `/usr/bin/python3` to
@@ -173,6 +176,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   Linux 2023 default AMI and explicit override behavior.
 - See `docs/plans/2026-06-17-public-ip-opt-in.md` for deterministic public IPv4
   assignment coupled to the existing ingress opt-in.
+- See `docs/plans/2026-06-18-non-null-default-inputs.md` for null-handling
+  coverage on defaulted Terraform inputs.
 
 ## Contributing
 
