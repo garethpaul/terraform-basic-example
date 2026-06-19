@@ -1,5 +1,45 @@
 # Changes
 
+## 2026-06-17
+
+- Coupled EC2 public IPv4 assignment to the existing validated ingress opt-in,
+  keeping the no-ingress default independent of subnet auto-assignment settings.
+- Replaced the obsolete region-specific image default with the latest
+  region-local Amazon Linux 2023 default AMI and an override-safe public
+  parameter lookup, using the AL2023 system Python server for the demo page.
+- Marked all non-AMI defaulted inputs non-nullable so explicit `null` values
+  cannot erase the documented defaults for region, instance type, port,
+  ingress, public IPv4 assignment, or ownership tags.
+
+## 2026-06-15
+
+- Refreshed the reproducible AWS provider lock to 6.50.0 and tightened static
+  validation around the reviewed canonical and cross-platform checksums.
+
+## 2026-06-14
+
+- Added resource tag count validation that reserves the resource-owned `Name`
+  key and rejects final EC2 tag sets above 50 entries.
+- Added resource tag length validation for EC2's 128-character key and
+  256-character value limits.
+- Added AMI ID length validation for the legacy 8-character and current
+  17-character lowercase hexadecimal EC2 identifier widths.
+
+## 2026-06-13
+
+- Required canonical IPv4 CIDRs so host-bit-bearing ranges fail Terraform
+  validation before reaching AWS security-group operations.
+- Disabled inbound HTTP in the default plan and required callers to opt in
+  with validated IPv4 CIDRs, with mocked provider runs for both states and
+  rejection coverage for malformed and IPv6 ranges.
+
+## 2026-06-12
+
+- Rejected IPv6 ranges passed to the security group's IPv4-only ingress field
+  and added a mocked Terraform plan test for the address-family boundary.
+- Rejected empty, blank, and AWS-reserved common resource tags and added
+  mocked Terraform plan tests for accepted defaults and invalid tag inputs.
+
 ## 2026-06-10
 
 - Rejected fractional server ports and added mocked native Terraform plan tests
@@ -13,7 +53,8 @@
   canonical and cross-platform checksums, and the immutable initialization
   path.
 - Added a least-privilege GitHub Actions workflow that runs `make check` with
-  Terraform 1.15.5 and commit-pinned Node 24 actions.
+  Terraform 1.15.6, commit-pinned Node 24 actions, and disabled checkout
+  credential persistence.
 - Constrained Terraform to supported 1.x releases and the AWS provider to 6.x,
   with a checked-in provider lockfile for reproducible initialization.
 - Made the Makefile's Terraform validation chain stop on the first failed

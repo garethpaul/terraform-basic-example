@@ -1,6 +1,6 @@
 .PHONY: build check lint test verify
 
-ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 PYTHON ?= python3
 TERRAFORM ?= terraform
 
@@ -9,6 +9,7 @@ lint:
 
 test:
 	$(PYTHON) "$(ROOT)/scripts/check-terraform-source.py" --mode config
+	$(PYTHON) "$(ROOT)/scripts/test_public_ip_assignment_contract.py"
 
 build: lint
 	@if command -v "$(TERRAFORM)" >/dev/null 2>&1; then \

@@ -26,20 +26,29 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_ssm_parameter" "al2023_ami" {
+  count = var.ami_id == null ? 1 : 0
+
+  name            = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  with_decryption = false
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # DEPLOY A SINGLE EC2 INSTANCE
 # ---------------------------------------------------------------------------------------------------------------------
 
 resource "aws_instance" "example" {
-  # Default AMI is Ubuntu Server 18.04 LTS in us-east-2; override ami_id for other regions.
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.instance.id]
+  ami = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].insecure_value
+
+  instance_type               = var.instance_type
+  associate_public_ip_address = length(var.allowed_cidr_blocks) > 0
+  vpc_security_group_ids      = [aws_security_group.instance.id]
 
   user_data                   = <<-EOF
               #!/bin/bash
-              echo "Hello, World" > index.html
-              nohup busybox httpd -f -p "${var.server_port}" &
+              mkdir -p /var/www/html
+              echo "Hello, World" > /var/www/html/index.html
+              nohup /usr/bin/python3 -m http.server "${var.server_port}" --directory /var/www/html >/var/log/terraform-example-http.log 2>&1 &
               EOF
   user_data_replace_on_change = true
 
@@ -65,13 +74,16 @@ resource "aws_security_group" "instance" {
   name        = "terraform-example-instance"
   description = "Allow HTTP access to the Terraform example web server"
 
-  # Inbound HTTP from anywhere
-  ingress {
-    description = "HTTP access to the example web server"
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
+  dynamic "ingress" {
+    for_each = length(var.allowed_cidr_blocks) == 0 ? [] : [var.allowed_cidr_blocks]
+
+    content {
+      description = "HTTP access to the example web server"
+      from_port   = var.server_port
+      to_port     = var.server_port
+      protocol    = "tcp"
+      cidr_blocks = ingress.value
+    }
   }
 
   tags = merge(var.resource_tags, {

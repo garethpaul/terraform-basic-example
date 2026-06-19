@@ -53,12 +53,19 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Running or Using the Project
 
 - Use `terraform plan` after `terraform init` to inspect infrastructure changes before applying anything.
-- Override `aws_region`, `ami_id`, and `instance_type` when planning outside
-  the sample defaults; AMI IDs are region-specific and instance type changes
-  can affect cost.
-- Override `allowed_cidr_blocks` before real use if the example web server
-  should not be reachable from the public internet. Values must be valid CIDR
-  blocks.
+- The region-local Amazon Linux 2023 default AMI is resolved through AWS's
+  public Systems Manager parameter. Set `ami_id` only for an architecture- or
+  workload-specific image; explicit overrides bypass that lookup and retain
+  structural validation. Override `aws_region` and `instance_type` as needed
+  for availability and cost.
+- Inbound HTTP and public IPv4 assignment are disabled by default. Set
+  `allowed_cidr_blocks` explicitly to reviewed canonical IPv4 CIDRs when access
+  is needed, preferably a narrow `/32` for the caller rather than `0.0.0.0/0`.
+  For example, set
+  `TF_VAR_allowed_cidr_blocks='["198.51.100.10/32"]'` before planning, replacing
+  the reserved documentation address with the caller's public IP. This opts in
+  to both settings; the selected subnet must still provide routing for
+  end-to-end reachability, and a public IPv4 address may incur AWS charges.
 
 ## Testing and Verification
 
@@ -70,6 +77,21 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   same check can be invoked from outside the repository.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
+- Defaulted inputs other than `ami_id` are non-nullable, so explicit `null`
+  values preserve the documented defaults instead of propagating into provider
+  configuration, network exposure decisions, or tag merges.
+- AMI ID length validation accepts only the legacy 8-character or current
+  17-character lowercase hexadecimal EC2 identifier widths.
+- The region-local Amazon Linux 2023 default AMI uses `/usr/bin/python3` to
+  serve the example page instead of relying on an obsolete image or BusyBox.
+- Resource tag length validation rejects keys over 128 characters and values
+  over 256 characters before provider planning.
+- Resource tag count validation reserves the resource-owned `Name` key and
+  rejects inputs that would produce more than 50 final EC2 tags.
+- Native Terraform tests use the mocked provider to prove the default creates
+  no inbound HTTP rule, explicit canonical IPv4 CIDRs opt in to one rule, and
+  malformed, IPv6, or host-bit-bearing ranges are rejected before they can
+  reach the security group's IPv4-only `cidr_blocks` field.
 - Static checks require configurable region, AMI, instance type, ingress CIDR
   syntax, and server port validation instead of editing literals in `main.tf`.
   Instance type validation requires EC2-shaped values such as `t2.micro`.
@@ -81,13 +103,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   the EC2 instance and security group.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 - GitHub Actions runs the same `make check` baseline on pushes and pull
-  requests with Terraform 1.15.5, so formatting, provider initialization, and
+  requests with Terraform 1.15.6, so formatting, provider initialization, and
   configuration validation are required in CI. The workflow uses read-only
-  repository permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout,
-  concurrency cancellation, and commit-pinned Node 24 actions.
+  repository permissions, disabled checkout credential persistence, a fixed
+  Ubuntu 24.04 image, a ten-minute timeout, concurrency cancellation, and
+  commit-pinned Node 24 actions.
 - `main.tf` constrains Terraform to supported 1.x releases and the AWS provider
   to 6.x. The validation gate treats `.terraform.lock.hcl` as read-only and
-  currently requires the reviewed AWS provider 6.49.0 selection and registry
+  currently requires the reviewed AWS provider 6.50.0 selection and registry
   checksums. Update the lockfile and static contract together when changing
   provider versions.
 
@@ -131,6 +154,30 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lock enforcement.
 - See `docs/plans/2026-06-10-server-port-integer-test.md` for whole-number port
   validation and the mocked Terraform plan test.
+- See `docs/plans/2026-06-12-resource-tags-validation.md` for common tag input
+  validation and mocked Terraform rejection tests.
+- See `docs/plans/2026-06-12-ipv4-ingress-cidrs.md` for the ingress address-
+  family boundary and mocked IPv6 rejection test.
+- See `docs/plans/2026-06-13-private-ingress-default.md` for the opt-in HTTP
+  ingress default and mocked rule-creation tests.
+- See `docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md` for canonical
+  IPv4 CIDR validation before provider execution.
+- See `docs/plans/2026-06-14-make-root-override-protection.md` for authoritative
+  repository-root selection across all Make aliases.
+- See `docs/plans/2026-06-14-ami-id-length-validation.md` for mocked plan
+  coverage of accepted and structurally invalid EC2 image identifiers.
+- See `docs/plans/2026-06-14-resource-tag-length-validation.md` for mocked
+  EC2 tag boundary coverage.
+- See `docs/plans/2026-06-14-resource-tag-count-validation.md` for mocked
+  post-merge EC2 tag-count coverage.
+- See `docs/plans/2026-06-15-aws-provider-lock-refresh.md` for the reviewed AWS
+  provider 6.50.0 selection and canonical lock checksums.
+- See `docs/plans/2026-06-17-al2023-default-ami.md` for the region-local Amazon
+  Linux 2023 default AMI and explicit override behavior.
+- See `docs/plans/2026-06-17-public-ip-opt-in.md` for deterministic public IPv4
+  assignment coupled to the existing ingress opt-in.
+- See `docs/plans/2026-06-18-non-null-default-inputs.md` for null-handling
+  coverage on defaulted Terraform inputs.
 
 ## Contributing
 

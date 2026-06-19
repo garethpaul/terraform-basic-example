@@ -18,7 +18,15 @@ Priority:
 - Keep Terraform version assumptions visible
 - Make AWS region, AMI, instance type, and open ingress explicit and configurable
 - Validate instance type overrides before provider planning
-- Validate ingress CIDR inputs before Terraform plans reach AWS
+- Preserve AMI ID length validation for legacy and current EC2 identifiers
+- Keep a region-local Amazon Linux 2023 default AMI with query-free overrides
+- Keep defaulted inputs non-nullable except for the intentional `ami_id`
+  override path
+- Preserve resource tag length validation before provider planning
+- Preserve resource tag count validation after resource-owned tag merging
+- Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
+- Keep public IPv4 assignment disabled with the default no-ingress inputs and
+  couple public address requests to the existing ingress opt-in
 - Validate server ports as whole numbers before Terraform plans reach AWS
 - Require IMDSv2 tokens on the example EC2 instance
 - Keep EC2 metadata response hop limits explicit for the single-instance demo
@@ -35,7 +43,7 @@ Next priorities:
 
 - Add quickstart and destroy instructions to the README
 - Document expected AWS costs and required credentials
-- Document region-specific AMI selection and safer demo defaults
+- Document architecture-specific AMI overrides and update expectations
 - Add notes about restricting ingress beyond demo use
 
 Contribution rules:

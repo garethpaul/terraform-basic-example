@@ -21,8 +21,9 @@ substantial toolchain drift between contributors.
 
 - Added `.github/workflows/check.yml` for pushes to `master`, pull requests,
   and manual runs.
-- Installed Terraform 1.15.5 with an immutable Node 24 action commit.
-- Granted only read access to repository contents and set a ten-minute timeout.
+- Installed Terraform 1.15.6 with an immutable Node 24 action commit.
+- Granted only read access to repository contents, disabled checkout credential
+  persistence, and set a ten-minute timeout.
 - Constrained Terraform to `>= 1.5.0, < 2.0.0` and the AWS provider to the 6.x
   release line.
 - Generated and committed `.terraform.lock.hcl` for reproducible provider
@@ -46,3 +47,4 @@ substantial toolchain drift between contributors.
 
 The validation gate initializes providers but does not configure AWS
 credentials, create a plan, apply infrastructure, or contact an AWS account.
+The static contract also rejects `terraform apply` in the shared Makefile.

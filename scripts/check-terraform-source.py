@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import re
 import subprocess
 import sys
@@ -15,18 +16,94 @@ RESOURCE_TAGS_PLAN = DOCS_PLANS / "2026-06-09-resource-tags.md"
 CI_PLAN = DOCS_PLANS / "2026-06-10-ci-baseline.md"
 LOCK_ENFORCEMENT_PLAN = DOCS_PLANS / "2026-06-10-readonly-provider-lock.md"
 SERVER_PORT_TEST_PLAN = DOCS_PLANS / "2026-06-10-server-port-integer-test.md"
+RESOURCE_TAGS_VALIDATION_PLAN = DOCS_PLANS / "2026-06-12-resource-tags-validation.md"
+IPV4_INGRESS_PLAN = DOCS_PLANS / "2026-06-12-ipv4-ingress-cidrs.md"
+PRIVATE_INGRESS_PLAN = DOCS_PLANS / "2026-06-13-private-ingress-default.md"
+CANONICAL_IPV4_PLAN = DOCS_PLANS / "2026-06-13-canonical-ipv4-ingress-cidrs.md"
+ROOT_OVERRIDE_PLAN = DOCS_PLANS / "2026-06-14-make-root-override-protection.md"
+AMI_ID_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-ami-id-length-validation.md"
+TAG_LENGTH_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-length-validation.md"
+TAG_COUNT_PLAN = DOCS_PLANS / "2026-06-14-resource-tag-count-validation.md"
+AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
+AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
+PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
+NON_NULL_INPUTS_PLAN = DOCS_PLANS / "2026-06-18-non-null-default-inputs.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
+RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
+ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
+AMI_ID_TEST = ROOT / "tests" / "ami_id.tftest.hcl"
+NON_NULL_INPUTS_TEST = ROOT / "tests" / "non_null_inputs.tftest.hcl"
+EXPECTED_WORKFLOW = """name: Check
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.6"
+          terraform_wrapper: false
+
+      - name: Run baseline
+        run: make check
+"""
+EXPECTED_AWS_PROVIDER_VERSION = "6.50.0"
+EXPECTED_AWS_PROVIDER_LOCK_SHA256 = "ad5a75825364466ea492968c6320e612471757a3f4fe2838ef478262c61d183e"
 
 
 def read_text(relative_path):
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
+def variable_block(variables, name):
+    marker = f'variable "{name}" {{'
+    start = variables.find(marker)
+    if start == -1:
+        return ""
+    next_variable = variables.find('\nvariable "', start + len(marker))
+    end = next_variable if next_variable != -1 else len(variables)
+    return variables[start:end]
+
+
 def tracked_files():
-    output = subprocess.check_output(["git", "ls-files"], cwd=str(ROOT), text=True)
-    return output.splitlines()
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=str(ROOT),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return [], f"unable to inspect tracked files: {result.stderr.strip()}"
+    return result.stdout.splitlines(), None
 
 
 def hygiene_checks():
@@ -45,8 +122,40 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-10-readonly-provider-lock.md is missing")
     if not SERVER_PORT_TEST_PLAN.exists():
         errors.append("docs/plans/2026-06-10-server-port-integer-test.md is missing")
+    if not RESOURCE_TAGS_VALIDATION_PLAN.exists():
+        errors.append("docs/plans/2026-06-12-resource-tags-validation.md is missing")
+    if not IPV4_INGRESS_PLAN.exists():
+        errors.append("docs/plans/2026-06-12-ipv4-ingress-cidrs.md is missing")
+    if not PRIVATE_INGRESS_PLAN.exists():
+        errors.append("docs/plans/2026-06-13-private-ingress-default.md is missing")
+    if not CANONICAL_IPV4_PLAN.exists():
+        errors.append("docs/plans/2026-06-13-canonical-ipv4-ingress-cidrs.md is missing")
+    if not ROOT_OVERRIDE_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-make-root-override-protection.md is missing")
+    if not AMI_ID_LENGTH_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-ami-id-length-validation.md is missing")
+    if not TAG_LENGTH_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-resource-tag-length-validation.md is missing")
+    if not TAG_COUNT_PLAN.exists():
+        errors.append("docs/plans/2026-06-14-resource-tag-count-validation.md is missing")
+    if not AWS_PROVIDER_LOCK_PLAN.exists():
+        errors.append("docs/plans/2026-06-15-aws-provider-lock-refresh.md is missing")
+    if not AL2023_DEFAULT_AMI_PLAN.exists():
+        errors.append("docs/plans/2026-06-17-al2023-default-ami.md is missing")
+    if not PUBLIC_IP_OPT_IN_PLAN.exists():
+        errors.append("docs/plans/2026-06-17-public-ip-opt-in.md is missing")
+    if not NON_NULL_INPUTS_PLAN.exists():
+        errors.append("docs/plans/2026-06-18-non-null-default-inputs.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
+    if not RESOURCE_TAGS_TEST.exists():
+        errors.append("tests/resource_tags.tftest.hcl is missing")
+    if not ALLOWED_CIDR_BLOCKS_TEST.exists():
+        errors.append("tests/allowed_cidr_blocks.tftest.hcl is missing")
+    if not AMI_ID_TEST.exists():
+        errors.append("tests/ami_id.tftest.hcl is missing")
+    if not NON_NULL_INPUTS_TEST.exists():
+        errors.append("tests/non_null_inputs.tftest.hcl is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -56,12 +165,68 @@ def hygiene_checks():
         if "Status: Completed" not in plan or "make check" not in plan:
             errors.append(f"{plan_path.relative_to(ROOT)} must record completed status and make check verification")
 
+    if AMI_ID_LENGTH_PLAN.exists():
+        ami_plan = AMI_ID_LENGTH_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "repository and external-directory `make check` passed",
+            "hostile AMI ID mutations were rejected",
+        ):
+            if evidence not in ami_plan:
+                errors.append(f"{AMI_ID_LENGTH_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
+    if TAG_LENGTH_PLAN.exists():
+        tag_plan = TAG_LENGTH_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile resource-tag length mutations were rejected",
+        ):
+            if evidence not in tag_plan:
+                errors.append(f"{TAG_LENGTH_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
+    if TAG_COUNT_PLAN.exists():
+        tag_count_plan = TAG_COUNT_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile resource-tag count mutations were rejected",
+        ):
+            if evidence not in tag_count_plan:
+                errors.append(f"{TAG_COUNT_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
+    if AWS_PROVIDER_LOCK_PLAN.exists():
+        provider_lock_plan = AWS_PROVIDER_LOCK_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile provider-lock mutations were rejected",
+        ):
+            if evidence not in provider_lock_plan:
+                errors.append(f"{AWS_PROVIDER_LOCK_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}")
+
+    if AL2023_DEFAULT_AMI_PLAN.exists():
+        al2023_plan = AL2023_DEFAULT_AMI_PLAN.read_text(encoding="utf-8")
+        for evidence in (
+            "Status: Completed",
+            "repository and external-directory `make check` passed",
+            "hostile AL2023 default AMI mutations were rejected",
+            "generated-artifact and credential-pattern audits passed",
+        ):
+            if evidence not in al2023_plan:
+                errors.append(
+                    f"{AL2023_DEFAULT_AMI_PLAN.relative_to(ROOT)} must record verification evidence: {evidence}"
+                )
+
     gitignore = read_text(".gitignore") if (ROOT / ".gitignore").exists() else ""
+    gitignore_lines = {line.strip() for line in gitignore.splitlines()}
     for pattern in (".terraform/", "*.tfstate", "*.tfstate.*", "*.tfvars", "crash.log"):
-        if pattern not in gitignore:
+        if pattern not in gitignore_lines:
             errors.append(f".gitignore must include Terraform pattern: {pattern}")
 
-    for path in tracked_files():
+    tracked, tracked_error = tracked_files()
+    if tracked_error:
+        errors.append(tracked_error)
+    for path in tracked:
         if path.endswith(".tfstate") or ".tfstate." in path or path.endswith(".tfvars"):
             errors.append(f"state or local variable file must not be tracked: {path}")
 
@@ -69,23 +234,8 @@ def hygiene_checks():
         errors.append(".github/workflows/check.yml is missing")
     else:
         workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-        for fragment in (
-            "permissions:",
-            "contents: read",
-            "workflow_dispatch:",
-            "concurrency:",
-            "cancel-in-progress: true",
-            "runs-on: ubuntu-24.04",
-            "timeout-minutes: 10",
-            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3",
-            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0",
-            "hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1",
-            'python-version: "3.12"',
-            'terraform_version: "1.15.5"',
-            "run: make check",
-        ):
-            if fragment not in workflow:
-                errors.append(f"CI workflow is missing expected fragment: {fragment}")
+        if workflow != EXPECTED_WORKFLOW:
+            errors.append("CI workflow must match the reviewed credential-free Terraform validation contract")
 
     if not LOCK_FILE.exists():
         errors.append(".terraform.lock.hcl is missing")
@@ -93,36 +243,86 @@ def hygiene_checks():
         lock_file = LOCK_FILE.read_text(encoding="utf-8")
         if 'provider "registry.terraform.io/hashicorp/aws"' not in lock_file:
             errors.append(".terraform.lock.hcl must pin the hashicorp/aws provider")
-        if 'version     = "6.49.0"' not in lock_file:
-            errors.append(".terraform.lock.hcl must select the reviewed AWS provider 6.49.0")
+        if f'version     = "{EXPECTED_AWS_PROVIDER_VERSION}"' not in lock_file:
+            errors.append(
+                ".terraform.lock.hcl must select the reviewed AWS provider "
+                f"{EXPECTED_AWS_PROVIDER_VERSION}"
+            )
         if 'constraints = ">= 6.0.0, < 7.0.0"' not in lock_file:
             errors.append(
                 ".terraform.lock.hcl must preserve the reviewed AWS provider constraint"
             )
-        if not re.search(r'^\s+"h1:[A-Za-z0-9+/=]+",$', lock_file, re.MULTILINE):
+        lock_sha256 = hashlib.sha256(lock_file.encode("utf-8")).hexdigest()
+        if lock_sha256 != EXPECTED_AWS_PROVIDER_LOCK_SHA256:
             errors.append(
-                ".terraform.lock.hcl must include a canonical provider package checksum"
+                ".terraform.lock.hcl must match the reviewed provider selection and checksum set"
             )
-        if len(re.findall(r'^\s+"zh:[0-9a-f]{64}",$', lock_file, re.MULTILINE)) < 10:
-            errors.append(".terraform.lock.hcl must include registry checksums for supported platforms")
 
-    readme = read_text("README.md")
-    if "GitHub Actions" not in readme:
-        errors.append("README must document the GitHub Actions check")
+    for doc_path in ("README.md", "SECURITY.md", "VISION.md", "CHANGES.md"):
+        document = re.sub(r"\s+", " ", read_text(doc_path))
+        if "GitHub Actions" not in document:
+            errors.append(f"{doc_path} must document the GitHub Actions check")
+        if "canonical ipv4 cidr" not in document.lower():
+            errors.append(f"{doc_path} must document canonical IPv4 CIDRs")
+        if "ami id length validation" not in document.lower():
+            errors.append(f"{doc_path} must document AMI ID length validation")
+        if "resource tag length validation" not in document.lower():
+            errors.append(f"{doc_path} must document resource tag length validation")
+        if "resource tag count validation" not in document.lower():
+            errors.append(f"{doc_path} must document resource tag count validation")
+        if "region-local amazon linux 2023 default ami" not in document.lower():
+            errors.append(f"{doc_path} must document the region-local Amazon Linux 2023 default AMI")
 
     makefile = read_text("Makefile")
+    root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
+    root_assignments = re.findall(r"^(?:override\s+)?ROOT\s*[:+?]?=", makefile, re.MULTILINE)
+    if len(root_assignments) != 1 or makefile.count(root_declaration) != 1:
+        errors.append("Makefile must contain exactly one protected repository-root declaration")
+    root_and_tool_block = "\n".join((
+        root_declaration,
+        "PYTHON ?= python3",
+        "TERRAFORM ?= terraform",
+    ))
+    if makefile.count(root_and_tool_block) != 1:
+        errors.append("Makefile must keep the protected root before tool overrides")
+    if re.search(
+        r'(?:terraform|"?\$\(TERRAFORM\)"?)\s+apply\b',
+        makefile,
+        re.IGNORECASE,
+    ):
+        errors.append("Makefile must not apply infrastructure")
     if 'set -e;' not in makefile:
         errors.append("Makefile Terraform validation must fail immediately when a command fails")
     for fragment in (
-        "ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))",
+        ".PHONY: build check lint test verify",
+        "build: lint",
+        "verify: lint test build",
+        "check: verify",
+        '"$(TERRAFORM)" fmt -check -diff',
         'cd "$(ROOT)";',
         "fmt -check -diff",
         "init -backend=false -lockfile=readonly",
         "validate -no-color",
         "test -no-color",
+        '$(PYTHON) "$(ROOT)/scripts/test_public_ip_assignment_contract.py"',
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
+
+    if "docs/plans/2026-06-14-make-root-override-protection.md" not in read_text("README.md"):
+        errors.append("README must index Make root override protection evidence")
+    if "docs/plans/2026-06-14-ami-id-length-validation.md" not in read_text("README.md"):
+        errors.append("README must index AMI ID length validation evidence")
+    if "docs/plans/2026-06-14-resource-tag-length-validation.md" not in read_text("README.md"):
+        errors.append("README must index resource tag length validation evidence")
+    if "docs/plans/2026-06-14-resource-tag-count-validation.md" not in read_text("README.md"):
+        errors.append("README must index resource tag count validation evidence")
+    if "docs/plans/2026-06-17-al2023-default-ami.md" not in read_text("README.md"):
+        errors.append("README must index region-local Amazon Linux 2023 default AMI evidence")
+    if "docs/plans/2026-06-17-public-ip-opt-in.md" not in read_text("README.md"):
+        errors.append("README must index public IPv4 opt-in evidence")
+    if "docs/plans/2026-06-18-non-null-default-inputs.md" not in read_text("README.md"):
+        errors.append("README must index non-null default input evidence")
 
     return errors
 
@@ -131,7 +331,21 @@ def config_checks():
     errors = []
     main = read_text("main.tf")
     variables = read_text("variables.tf")
+    readme = read_text("README.md")
+    security = read_text("SECURITY.md")
     server_port_test = read_text("tests/server_port.tftest.hcl") if SERVER_PORT_TEST.exists() else ""
+    resource_tags_test = read_text("tests/resource_tags.tftest.hcl") if RESOURCE_TAGS_TEST.exists() else ""
+    allowed_cidr_blocks_test = (
+        read_text("tests/allowed_cidr_blocks.tftest.hcl")
+        if ALLOWED_CIDR_BLOCKS_TEST.exists()
+        else ""
+    )
+    ami_id_test = read_text("tests/ami_id.tftest.hcl") if AMI_ID_TEST.exists() else ""
+    non_null_inputs_test = (
+        read_text("tests/non_null_inputs.tftest.hcl")
+        if NON_NULL_INPUTS_TEST.exists()
+        else ""
+    )
 
     if 'required_version = ">= 1.5.0, < 2.0.0"' not in main:
         errors.append("main.tf must constrain Terraform to the supported 1.x range")
@@ -143,18 +357,38 @@ def config_checks():
         errors.append("provider region must be configurable")
     if "region = var.aws_region" not in main:
         errors.append("provider region must reference var.aws_region")
-    if re.search(r'ami\s+=\s+"ami-[0-9a-f]+"', main):
-        errors.append("instance AMI must be configurable")
-    if "ami                    = var.ami_id" not in main:
-        errors.append("instance AMI must reference var.ami_id")
+    for fragment in (
+        'data "aws_ssm_parameter" "al2023_ami"',
+        "count = var.ami_id == null ? 1 : 0",
+        'name            = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"',
+        "with_decryption = false",
+        "ami = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].insecure_value",
+    ):
+        if fragment not in main:
+            errors.append(f"region-local AL2023 AMI selection is missing contract: {fragment}")
+    if "data.aws_ssm_parameter.al2023_ami[0].value" in main:
+        errors.append("public AL2023 AMI selection must not propagate a sensitive parameter value")
+    if "ami-0c55b159cbfafe1f0" in main or "Ubuntu Server 18.04" in main:
+        errors.append("instance AMI must not retain the obsolete Ubuntu 18.04 default")
+    for fragment in (
+        "mkdir -p /var/www/html",
+        'echo "Hello, World" > /var/www/html/index.html',
+        'nohup /usr/bin/python3 -m http.server "${var.server_port}" --directory /var/www/html',
+    ):
+        if fragment not in main:
+            errors.append(f"AL2023 user data is missing contract: {fragment}")
+    if "busybox httpd" in main:
+        errors.append("AL2023 user data must not depend on BusyBox")
     if re.search(r'instance_type\s+=\s+"[^"]+"', main):
         errors.append("instance type must be configurable")
     if not re.search(r'instance_type\s+=\s+var\.instance_type', main):
         errors.append("instance type must reference var.instance_type")
     if 'cidr_blocks = ["0.0.0.0/0"]' in main:
         errors.append("security group ingress must use configurable CIDR blocks")
-    if "cidr_blocks = var.allowed_cidr_blocks" not in main:
-        errors.append("security group ingress must reference var.allowed_cidr_blocks")
+    if "for_each = length(var.allowed_cidr_blocks) == 0 ? [] : [var.allowed_cidr_blocks]" not in main:
+        errors.append("security group ingress must be disabled for the empty CIDR default")
+    if "cidr_blocks = ingress.value" not in main:
+        errors.append("security group ingress must use the validated dynamic CIDR value")
     if 'description = "Allow HTTP access to the Terraform example web server"' not in main:
         errors.append("security group must describe the example web server access")
     if 'description = "HTTP access to the example web server"' not in main:
@@ -167,12 +401,116 @@ def config_checks():
         errors.append("security group must carry a Name tag")
     if 'variable "allowed_cidr_blocks"' not in variables:
         errors.append("variables.tf must define allowed_cidr_blocks")
-    if "var.allowed_cidr_blocks" not in variables or "cidrhost(cidr, 0)" not in variables:
-        errors.append("allowed_cidr_blocks must validate CIDR values")
+    if "default     = []" not in variables:
+        errors.append("allowed_cidr_blocks must default to no inbound access")
+    if "var.allowed_cidr_blocks" not in variables or "can(cidrnetmask(cidr))" not in variables:
+        errors.append("allowed_cidr_blocks must validate IPv4 CIDR values")
+    if 'cidr == try(cidrsubnet(cidr, 0, 0), "")' not in variables:
+        errors.append("allowed_cidr_blocks must reject noncanonical IPv4 CIDRs safely")
+    if "cidr == cidrsubnet(cidr, 0, 0)" in variables:
+        errors.append("allowed_cidr_blocks canonicalization must not evaluate malformed CIDRs unsafely")
+    if "length(var.allowed_cidr_blocks) > 0" in variables:
+        errors.append("allowed_cidr_blocks validation must permit the empty private default")
+    if 'length(regexall(":", cidr)) == 0' in variables:
+        errors.append("allowed_cidr_blocks must use Terraform IPv4 parsing instead of string heuristics")
+    for fragment in (
+        "Inbound HTTP and public IPv4 assignment are disabled by default.",
+        "TF_VAR_allowed_cidr_blocks",
+        "preferably a narrow `/32`",
+        "selected subnet must still provide routing",
+        "public IPv4 address may incur AWS charges",
+    ):
+        if fragment not in readme:
+            errors.append(f"README ingress guidance is missing contract: {fragment}")
+    for fragment in (
+        "The default plan creates no inbound HTTP rule",
+        "reviewed IPv4 CIDRs",
+        "`0.0.0.0/0` access",
+        "neither inbound HTTP nor a public IPv4",
+    ):
+        if fragment not in security:
+            errors.append(f"SECURITY ingress guidance is missing contract: {fragment}")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_private_default"',
+        'run "accept_explicit_ipv4_cidr_blocks"',
+        'run "reject_ipv6_cidr_blocks"',
+        'run "reject_malformed_cidr_blocks"',
+        'run "reject_noncanonical_ipv4_cidr_blocks"',
+        'allowed_cidr_blocks = ["198.51.100.10/32"]',
+        'allowed_cidr_blocks = ["2001:db8::/32"]',
+        'allowed_cidr_blocks = ["not-a-cidr"]',
+        'allowed_cidr_blocks = ["198.51.100.10/24"]',
+        "length(aws_security_group.instance.ingress) == 0",
+        "length(aws_security_group.instance.ingress) == 1",
+        'expect_failures = [var.allowed_cidr_blocks]',
+    ):
+        if fragment not in allowed_cidr_blocks_test:
+            errors.append(f"allowed CIDR Terraform test is missing contract: {fragment}")
+    if allowed_cidr_blocks_test.count("expect_failures = [var.allowed_cidr_blocks]") != 3:
+        errors.append("allowed CIDR Terraform tests must expect IPv6, malformed, and noncanonical validation failures")
     if 'variable "aws_region"' not in variables or "var.aws_region" not in variables:
         errors.append("variables.tf must define and validate aws_region")
     if 'variable "ami_id"' not in variables or "var.ami_id" not in variables:
         errors.append("variables.tf must define and validate ami_id")
+    if 'default     = null' not in variables or 'nullable    = true' not in variables:
+        errors.append("ami_id must default to an explicit nullable override")
+    if 'var.ami_id == null || can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
+        errors.append("ami_id must permit null while validating explicit identifiers")
+    if 'can(regex("^ami-([0-9a-f]{8}|[0-9a-f]{17})$", var.ami_id))' not in variables:
+        errors.append("ami_id must require an 8- or 17-character lowercase hexadecimal suffix")
+    for non_null_input in (
+        "aws_region",
+        "instance_type",
+        "server_port",
+        "allowed_cidr_blocks",
+        "resource_tags",
+    ):
+        if "nullable    = false" not in variable_block(variables, non_null_input):
+            errors.append(f"{non_null_input} must be non-nullable so explicit null cannot erase its default")
+    for fragment in (
+        'mock_provider "aws" {',
+        'mock_data "aws_ssm_parameter"',
+        'insecure_value = "ami-0123456789abcdef0"',
+        'run "accept_region_local_al2023_default"',
+        'run "accept_legacy_ami_id"',
+        'run "accept_current_ami_id"',
+        'run "reject_short_ami_id"',
+        'run "reject_intermediate_length_ami_id"',
+        'run "reject_long_ami_id"',
+        'run "reject_uppercase_ami_id"',
+        'run "reject_malformed_ami_id"',
+        'ami_id = "ami-1234abcd"',
+        'ami_id = "ami-0fedcba9876543210"',
+        'length(data.aws_ssm_parameter.al2023_ami) == 1',
+        'aws_instance.example.ami == "ami-0123456789abcdef0"',
+        'length(data.aws_ssm_parameter.al2023_ami) == 0',
+        'aws_instance.example.ami == "ami-1234abcd"',
+        'aws_instance.example.ami == "ami-0fedcba9876543210"',
+        'expect_failures = [var.ami_id]',
+    ):
+        if fragment not in ami_id_test:
+            errors.append(f"AMI ID Terraform test is missing contract: {fragment}")
+    if ami_id_test.count("expect_failures = [var.ami_id]") != 5:
+        errors.append("AMI ID Terraform tests must expect all five invalid identifier failures")
+    for fragment in (
+        'mock_provider "aws" {',
+        'mock_data "aws_ssm_parameter"',
+        'run "accept_explicit_nulls_as_defaulted_inputs"',
+        "aws_region          = null",
+        "instance_type       = null",
+        "server_port         = null",
+        "allowed_cidr_blocks = null",
+        "resource_tags       = null",
+        "ami_id              = null",
+        'aws_instance.example.ami == "ami-0123456789abcdef0"',
+        'aws_instance.example.instance_type == "t2.micro"',
+        "aws_instance.example.associate_public_ip_address == false",
+        "length(aws_security_group.instance.ingress) == 0",
+        'aws_instance.example.tags.ManagedBy == "terraform"',
+    ):
+        if fragment not in non_null_inputs_test:
+            errors.append(f"non-null input Terraform test is missing contract: {fragment}")
     if 'variable "instance_type"' not in variables or "var.instance_type" not in variables:
         errors.append("variables.tf must define and validate instance_type")
     if 'can(regex("^[a-z0-9][a-z0-9-]*[.][a-z0-9]+$", var.instance_type))' not in variables:
@@ -183,6 +521,17 @@ def config_checks():
         errors.append("resource_tags must be a string map")
     if 'ManagedBy = "terraform"' not in variables or 'Project   = "terraform-basic-example"' not in variables:
         errors.append("resource_tags must include default ownership tags")
+    for fragment in (
+        "length(var.resource_tags) > 0",
+        "length(trimspace(key)) > 0",
+        "length(trimspace(value)) > 0",
+        "length(key) <= 128",
+        "length(value) <= 256",
+        '!startswith(lower(key), "aws:")',
+        'length(setunion(toset(keys(var.resource_tags)), toset(["Name"]))) <= 50',
+    ):
+        if fragment not in variables:
+            errors.append(f"resource_tags validation is missing contract: {fragment}")
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "var.server_port == floor(var.server_port)" not in variables:
@@ -196,6 +545,33 @@ def config_checks():
     ):
         if fragment not in server_port_test:
             errors.append(f"server port Terraform test is missing contract: {fragment}")
+    for fragment in (
+        'mock_provider "aws" {}',
+        'run "accept_default_resource_tags"',
+        'run "reject_empty_resource_tags"',
+        'run "reject_blank_resource_tag_key"',
+        'run "reject_blank_resource_tag_value"',
+        'run "reject_reserved_resource_tag_key"',
+        'run "accept_resource_tag_length_boundaries"',
+        'run "reject_overlong_resource_tag_key"',
+        'run "reject_overlong_resource_tag_value"',
+        'run "accept_49_resource_tags_without_name"',
+        'run "accept_50_resource_tags_with_name"',
+        'run "reject_50_resource_tags_without_name"',
+        'range(128)',
+        'range(256)',
+        'range(129)',
+        'range(257)',
+        'range(49)',
+        'range(50)',
+        'Name = "caller-value"',
+        "resource_tags = {}",
+        '"aws:owner" = "platform"',
+    ):
+        if fragment not in resource_tags_test:
+            errors.append(f"resource tags Terraform test is missing contract: {fragment}")
+    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 7:
+        errors.append("resource tags Terraform tests must expect all seven validation failures")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):
@@ -204,6 +580,17 @@ def config_checks():
         errors.append("aws_instance.example root block device must be encrypted")
     if not re.search(r'user_data_replace_on_change\s+=\s+true', main):
         errors.append("aws_instance.example must replace on user_data changes")
+    if not re.search(
+        r"associate_public_ip_address\s+=\s+length\(var\.allowed_cidr_blocks\)\s*>\s*0",
+        main,
+    ):
+        errors.append("aws_instance.example public IPv4 assignment must follow allowed_cidr_blocks")
+    for fragment in (
+        "aws_instance.example.associate_public_ip_address == false",
+        "aws_instance.example.associate_public_ip_address == true",
+    ):
+        if fragment not in allowed_cidr_blocks_test:
+            errors.append(f"allowed CIDR Terraform test is missing public IPv4 contract: {fragment}")
 
     return errors
 

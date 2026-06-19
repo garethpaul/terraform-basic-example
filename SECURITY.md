@@ -30,12 +30,34 @@ Helpful reports include:
   CI initializes with `-lockfile=readonly`, and static checks require the
   reviewed provider selection plus canonical and cross-platform registry
   checksums. Review lockfile changes alongside the corresponding constraint.
-- GitHub Actions runs `make check` with Terraform 1.15.5, read-only repository
-  permissions, a fixed Ubuntu 24.04 image, a ten-minute timeout, concurrency
-  cancellation, and commit-pinned Node 24 actions; review workflow and checker
-  changes alongside Terraform configuration changes.
+- GitHub Actions runs `make check` with Terraform 1.15.6, read-only repository
+  permissions, disabled checkout credential persistence, a fixed Ubuntu 24.04
+  image, a ten-minute timeout, concurrency cancellation, and commit-pinned Node
+  24 actions; review workflow and checker changes alongside Terraform
+  configuration changes.
 - Mocked Terraform tests reject fractional listener ports before invalid user
   data or security-group values can reach an AWS plan.
+- Defaulted inputs other than the intentional `ami_id` override are
+  non-nullable, preventing explicit `null` values from erasing the reviewed
+  region, instance type, listener port, private ingress default, public IPv4
+  boundary, or ownership tags.
+- AMI ID length validation rejects structurally impossible image identifiers
+  before provider or AWS API interaction.
+- The region-local Amazon Linux 2023 default AMI is read from an AWS-owned
+  public parameter; explicit AMI overrides bypass the lookup and remain
+  structurally validated.
+- Resource tag length validation rejects overlong keys and values before
+  provider or AWS API interaction.
+- Resource tag count validation includes the resource-owned `Name` key and
+  rejects final EC2 tag sets above the 50-tag service limit.
+- Ingress validation requires canonical IPv4 CIDRs and rejects IPv6,
+  malformed, or host-bit-bearing ranges before they reach the AWS security
+  group's IPv4-only `cidr_blocks` field.
+- The default plan creates no inbound HTTP rule; callers must opt in with
+  reviewed IPv4 CIDRs, preferably a narrow source range rather than public
+  `0.0.0.0/0` access.
+- The shared Makefile may initialize, validate, and test Terraform, but the
+  static contract rejects `terraform apply`.
 
 ## Infrastructure Notes
 
@@ -44,6 +66,11 @@ For infrastructure examples, report overly permissive access controls, exposed s
 ## Dependency and Supply Chain Security
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
+
+The default Terraform inputs request neither inbound HTTP nor a public IPv4
+address. Supplying `allowed_cidr_blocks` opts in to both settings; restrict the
+CIDRs to trusted callers, confirm the selected subnet's routing separately, and
+account for public IPv4 charges before applying the example.
 
 ## Safe Research Guidelines
 
