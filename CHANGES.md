@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-21
+
+- Isolated repository verification from caller-controlled Make roots, shells,
+  startup files, non-executing modes, and Make-syntax tool overrides.
+- Added adversarial Make authority regression coverage and pinned GitHub
+  Actions verification to `/usr/bin/make`.
+
 ## 2026-06-17
 
 - Coupled EC2 public IPv4 assignment to the existing validated ingress opt-in,

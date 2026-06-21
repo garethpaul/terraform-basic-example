@@ -74,7 +74,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   -check -diff`, `terraform init -backend=false -lockfile=readonly`, and
   `terraform validate -no-color`, followed by mocked `terraform test
   -no-color` plans. The Makefile resolves paths from its own location, so the
-  same check can be invoked from outside the repository.
+  same check can be invoked from outside the repository. Verification also
+  rejects caller-controlled roots, shells, startup makefiles, non-executing
+  Make modes, and Make-syntax tool overrides; CI invokes `/usr/bin/make`
+  directly. An executable workflow contract rejects 17 unsafe mutations to
+  action pins, permissions, credentials, versions, triggers, and dispatch.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
 - Defaulted inputs other than `ami_id` are non-nullable, so explicit `null`
@@ -178,6 +182,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   assignment coupled to the existing ingress opt-in.
 - See `docs/plans/2026-06-18-non-null-default-inputs.md` for null-handling
   coverage on defaulted Terraform inputs.
+- See `docs/plans/2026-06-21-make-authority-isolation.md` for the executable
+  Make trust-boundary and adversarial root/flag/tool coverage.
 
 ## Contributing
 

@@ -36,4 +36,4 @@ jobs:
           terraform_wrapper: false
 
       - name: Run baseline
-        run: make check
+        run: /usr/bin/make check

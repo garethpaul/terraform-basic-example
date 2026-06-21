@@ -28,6 +28,7 @@ AWS_PROVIDER_LOCK_PLAN = DOCS_PLANS / "2026-06-15-aws-provider-lock-refresh.md"
 AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
 PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
 NON_NULL_INPUTS_PLAN = DOCS_PLANS / "2026-06-18-non-null-default-inputs.md"
+MAKE_AUTHORITY_PLAN = DOCS_PLANS / "2026-06-21-make-authority-isolation.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -35,6 +36,7 @@ RESOURCE_TAGS_TEST = ROOT / "tests" / "resource_tags.tftest.hcl"
 ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
 AMI_ID_TEST = ROOT / "tests" / "ami_id.tftest.hcl"
 NON_NULL_INPUTS_TEST = ROOT / "tests" / "non_null_inputs.tftest.hcl"
+WORKFLOW_CONTRACT_TEST = ROOT / "scripts" / "test_workflow_contract.py"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -73,7 +75,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Run baseline
-        run: make check
+        run: /usr/bin/make check
 """
 EXPECTED_AWS_PROVIDER_VERSION = "6.50.0"
 EXPECTED_AWS_PROVIDER_LOCK_SHA256 = "ad5a75825364466ea492968c6320e612471757a3f4fe2838ef478262c61d183e"
@@ -146,6 +148,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-17-public-ip-opt-in.md is missing")
     if not NON_NULL_INPUTS_PLAN.exists():
         errors.append("docs/plans/2026-06-18-non-null-default-inputs.md is missing")
+    if not MAKE_AUTHORITY_PLAN.exists():
+        errors.append("docs/plans/2026-06-21-make-authority-isolation.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -156,6 +160,8 @@ def hygiene_checks():
         errors.append("tests/ami_id.tftest.hcl is missing")
     if not NON_NULL_INPUTS_TEST.exists():
         errors.append("tests/non_null_inputs.tftest.hcl is missing")
+    if not WORKFLOW_CONTRACT_TEST.exists():
+        errors.append("scripts/test_workflow_contract.py is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -274,19 +280,11 @@ def hygiene_checks():
             errors.append(f"{doc_path} must document the region-local Amazon Linux 2023 default AMI")
 
     makefile = read_text("Makefile")
-    root_declaration = "override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))"
     root_assignments = re.findall(r"^(?:override\s+)?ROOT\s*[:+?]?=", makefile, re.MULTILINE)
-    if len(root_assignments) != 1 or makefile.count(root_declaration) != 1:
+    if len(root_assignments) != 1:
         errors.append("Makefile must contain exactly one protected repository-root declaration")
-    root_and_tool_block = "\n".join((
-        root_declaration,
-        "PYTHON ?= python3",
-        "TERRAFORM ?= terraform",
-    ))
-    if makefile.count(root_and_tool_block) != 1:
-        errors.append("Makefile must keep the protected root before tool overrides")
     if re.search(
-        r'(?:terraform|"?\$\(TERRAFORM\)"?)\s+apply\b',
+        r'(?:terraform|"?\$\$TERRAFORM"?|"?\$\(TERRAFORM\)"?)\s+apply\b',
         makefile,
         re.IGNORECASE,
     ):
@@ -294,17 +292,30 @@ def hygiene_checks():
     if 'set -e;' not in makefile:
         errors.append("Makefile Terraform validation must fail immediately when a command fails")
     for fragment in (
-        ".PHONY: build check lint test verify",
+        ".DEFAULT_GOAL := check",
+        ".PHONY: __repository-make-authority build check contract-test lint root-test test verify",
+        "override PYTHON := $(value PYTHON)",
+        "override TERRAFORM := $(value TERRAFORM)",
+        "override SHELL := /bin/sh",
+        "MAKEFLAGS must not be overridden for repository verification",
+        "non-executing or error-ignoring MAKEFLAGS are not supported",
+        "MAKEFILES must be empty",
+        "MAKEFILE_LIST must not be overridden",
+        "build check contract-test lint root-test test verify: __repository-make-authority",
         "build: lint",
-        "verify: lint test build",
+        "contract-test:",
+        '"$$PYTHON" "$$ROOT/scripts/test_workflow_contract.py"',
+        "root-test:",
+        '"$$ROOT/scripts/test-makefile-root.sh"',
+        "verify: root-test lint contract-test test build",
         "check: verify",
-        '"$(TERRAFORM)" fmt -check -diff',
-        'cd "$(ROOT)";',
+        '"$$TERRAFORM" fmt -check -diff',
+        'cd "$$ROOT";',
         "fmt -check -diff",
         "init -backend=false -lockfile=readonly",
         "validate -no-color",
         "test -no-color",
-        '$(PYTHON) "$(ROOT)/scripts/test_public_ip_assignment_contract.py"',
+        '"$$PYTHON" "$$ROOT/scripts/test_public_ip_assignment_contract.py"',
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
@@ -323,6 +334,8 @@ def hygiene_checks():
         errors.append("README must index public IPv4 opt-in evidence")
     if "docs/plans/2026-06-18-non-null-default-inputs.md" not in read_text("README.md"):
         errors.append("README must index non-null default input evidence")
+    if "docs/plans/2026-06-21-make-authority-isolation.md" not in read_text("README.md"):
+        errors.append("README must index Make authority isolation evidence")
 
     return errors
 
