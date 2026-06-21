@@ -27,10 +27,10 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 Additional scan context:
 
-- Source directories: no top-level source directories detected
-- Dependency and build manifests: none detected
-- Entry points or build surfaces: none detected
-- Test-looking files: no obvious test files detected
+- Terraform module: the root `main.tf`, `variables.tf`, and `outputs.tf` files define the deployment surface
+- Dependency lock manifest: `.terraform.lock.hcl` pins the reviewed provider selection and checksums
+- Verification entry points: `Makefile` and `.github/workflows/check.yml` run the repository gates
+- Test suites: `tests/*.tftest.hcl` and `scripts/test_*.py` cover Terraform inputs and repository contracts
 
 ## Getting Started
 
