@@ -58,6 +58,7 @@ lint:
 
 test:
 	"$$PYTHON" "$$ROOT/scripts/check-terraform-source.py" --mode config
+	"$$PYTHON" "$$ROOT/scripts/test_resource_tag_contract.py"
 	"$$PYTHON" "$$ROOT/scripts/test_public_ip_assignment_contract.py"
 
 contract-test:

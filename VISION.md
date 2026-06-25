@@ -33,7 +33,8 @@ Priority:
 - Keep the example instance root volume explicitly encrypted
 - Replace the demo instance when its launch-time user data changes
 - Keep security group purpose visible in AWS plans and tags
-- Keep common ownership tags on demo resources for cleanup traceability
+- Keep common ownership tags on demo compute, storage, and network resources
+  for cleanup traceability
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 - Keep reproducible Terraform initialization and validation running in GitHub Actions

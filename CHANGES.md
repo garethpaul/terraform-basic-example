@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-25
+
+- Propagated validated shared ownership tags to the EC2 instance's created EBS
+  volumes with a volume-specific `Name` tag for cleanup and cost traceability.
+- Added mocked Terraform and portable source contracts for default and custom
+  volume tag propagation.
+
 ## 2026-06-21
 
 - Isolated repository verification from caller-controlled Make roots, shells,
