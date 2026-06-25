@@ -29,6 +29,7 @@ AL2023_DEFAULT_AMI_PLAN = DOCS_PLANS / "2026-06-17-al2023-default-ami.md"
 PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
 NON_NULL_INPUTS_PLAN = DOCS_PLANS / "2026-06-18-non-null-default-inputs.md"
 MAKE_AUTHORITY_PLAN = DOCS_PLANS / "2026-06-21-make-authority-isolation.md"
+VOLUME_TAGS_PLAN = DOCS_PLANS / "2026-06-25-instance-volume-tags.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -37,6 +38,7 @@ ALLOWED_CIDR_BLOCKS_TEST = ROOT / "tests" / "allowed_cidr_blocks.tftest.hcl"
 AMI_ID_TEST = ROOT / "tests" / "ami_id.tftest.hcl"
 NON_NULL_INPUTS_TEST = ROOT / "tests" / "non_null_inputs.tftest.hcl"
 WORKFLOW_CONTRACT_TEST = ROOT / "scripts" / "test_workflow_contract.py"
+RESOURCE_TAG_CONTRACT_TEST = ROOT / "scripts" / "test_resource_tag_contract.py"
 EXPECTED_WORKFLOW = """name: Check
 
 on:
@@ -95,6 +97,17 @@ def variable_block(variables, name):
     return variables[start:end]
 
 
+def resource_tag_merge_errors(main):
+    assignments = re.findall(
+        r"^\s*tags\s*=\s*merge\(var\.resource_tags,\s*\{",
+        main,
+        re.MULTILINE,
+    )
+    if len(assignments) != 2:
+        return ["EC2 instance and security group must merge common resource tags"]
+    return []
+
+
 def tracked_files():
     result = subprocess.run(
         ["git", "ls-files"],
@@ -150,6 +163,8 @@ def hygiene_checks():
         errors.append("docs/plans/2026-06-18-non-null-default-inputs.md is missing")
     if not MAKE_AUTHORITY_PLAN.exists():
         errors.append("docs/plans/2026-06-21-make-authority-isolation.md is missing")
+    if not VOLUME_TAGS_PLAN.exists():
+        errors.append("docs/plans/2026-06-25-instance-volume-tags.md is missing")
     if not SERVER_PORT_TEST.exists():
         errors.append("tests/server_port.tftest.hcl is missing")
     if not RESOURCE_TAGS_TEST.exists():
@@ -162,6 +177,8 @@ def hygiene_checks():
         errors.append("tests/non_null_inputs.tftest.hcl is missing")
     if not WORKFLOW_CONTRACT_TEST.exists():
         errors.append("scripts/test_workflow_contract.py is missing")
+    if not RESOURCE_TAG_CONTRACT_TEST.exists():
+        errors.append("scripts/test_resource_tag_contract.py is missing")
 
     plans = sorted(DOCS_PLANS.glob("*.md")) if DOCS_PLANS.exists() else []
     if not plans:
@@ -316,6 +333,7 @@ def hygiene_checks():
         "validate -no-color",
         "test -no-color",
         '"$$PYTHON" "$$ROOT/scripts/test_public_ip_assignment_contract.py"',
+        '"$$PYTHON" "$$ROOT/scripts/test_resource_tag_contract.py"',
     ):
         if fragment not in makefile:
             errors.append(f"Makefile is missing expected validation fragment: {fragment}")
@@ -406,8 +424,7 @@ def config_checks():
         errors.append("security group must describe the example web server access")
     if 'description = "HTTP access to the example web server"' not in main:
         errors.append("security group ingress must describe the exposed HTTP rule")
-    if main.count("tags = merge(var.resource_tags, {") < 2:
-        errors.append("EC2 instance and security group must merge common resource tags")
+    errors.extend(resource_tag_merge_errors(main))
     if 'Name = "terraform-example"' not in main:
         errors.append("EC2 instance must carry a Name tag")
     if 'Name = "terraform-example-instance"' not in main:
@@ -561,6 +578,7 @@ def config_checks():
     for fragment in (
         'mock_provider "aws" {}',
         'run "accept_default_resource_tags"',
+        'run "propagate_custom_resource_tags_to_volumes"',
         'run "reject_empty_resource_tags"',
         'run "reject_blank_resource_tag_key"',
         'run "reject_blank_resource_tag_value"',
@@ -578,6 +596,10 @@ def config_checks():
         'range(49)',
         'range(50)',
         'Name = "caller-value"',
+        'aws_instance.example.volume_tags["ManagedBy"] == "terraform"',
+        'aws_instance.example.volume_tags["Project"] == "terraform-basic-example"',
+        'aws_instance.example.volume_tags["Owner"] == "platform"',
+        'aws_instance.example.volume_tags["Name"] == "terraform-example-volume"',
         "resource_tags = {}",
         '"aws:owner" = "platform"',
     ):
@@ -591,6 +613,12 @@ def config_checks():
         errors.append("aws_instance.example must limit metadata response hops to 1")
     if "root_block_device" not in main or "encrypted = true" not in main:
         errors.append("aws_instance.example root block device must be encrypted")
+    if not re.search(
+        r"volume_tags\s*=\s*merge\(var\.resource_tags,\s*\{\s*Name\s*=\s*\"terraform-example-volume\"\s*\}\s*\)",
+        main,
+        re.DOTALL,
+    ):
+        errors.append("aws_instance.example volumes must inherit shared ownership tags")
     if not re.search(r'user_data_replace_on_change\s+=\s+true', main):
         errors.append("aws_instance.example must replace on user_data changes")
     if not re.search(

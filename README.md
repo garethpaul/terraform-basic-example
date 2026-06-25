@@ -78,7 +78,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   rejects caller-controlled roots, shells, startup makefiles, non-executing
   Make modes, and Make-syntax tool overrides; CI invokes `/usr/bin/make`
   directly. An executable workflow contract rejects 17 unsafe mutations to
-  action pins, permissions, credentials, versions, triggers, and dispatch.
+  action pins, permissions, credentials, versions, triggers, and dispatch. A
+  resource-tag contract separately rejects removal of either the instance or
+  security-group ownership-tag merge.
 - Native Terraform tests prove the default server port plans successfully and
   reject fractional port values before user data or security groups reach AWS.
 - Defaulted inputs other than `ami_id` are non-nullable, so explicit `null`
@@ -92,6 +94,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   over 256 characters before provider planning.
 - Resource tag count validation reserves the resource-owned `Name` key and
   rejects inputs that would produce more than 50 final EC2 tags.
+- The instance applies validated shared ownership tags to its created EBS
+  volumes at creation time, with a volume-specific `Name` tag for cleanup and
+  cost traceability.
 - Native Terraform tests use the mocked provider to prove the default creates
   no inbound HTTP rule, explicit canonical IPv4 CIDRs opt in to one rule, and
   malformed, IPv6, or host-bit-bearing ranges are rejected before they can
@@ -104,7 +109,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   encrypted, and user-data edits to replace the demo instance. Security group
   checks require descriptions and a `Name` tag so AWS plans show the rule
   intent. Resource checks also require shared ownership tags to be merged into
-  the EC2 instance and security group.
+  the EC2 instance, its created EBS volumes, and the security group.
 - Hygiene checks also require completed canonical plans under `docs/plans`.
 - GitHub Actions runs the same `make check` baseline on pushes and pull
   requests with Terraform 1.15.6, so formatting, provider initialization, and
@@ -184,6 +189,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   coverage on defaulted Terraform inputs.
 - See `docs/plans/2026-06-21-make-authority-isolation.md` for the executable
   Make trust-boundary and adversarial root/flag/tool coverage.
+- See `docs/plans/2026-06-25-instance-volume-tags.md` for created EBS volume
+  ownership tag propagation and mocked plan coverage.
 
 ## Contributing
 

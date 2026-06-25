@@ -2,6 +2,33 @@ mock_provider "aws" {}
 
 run "accept_default_resource_tags" {
   command = plan
+
+  assert {
+    condition = (
+      aws_instance.example.volume_tags["ManagedBy"] == "terraform" &&
+      aws_instance.example.volume_tags["Project"] == "terraform-basic-example" &&
+      aws_instance.example.volume_tags["Name"] == "terraform-example-volume"
+    )
+    error_message = "The instance volumes must inherit the shared ownership tags and a volume-specific Name tag."
+  }
+}
+
+run "propagate_custom_resource_tags_to_volumes" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      Owner = "platform"
+    }
+  }
+
+  assert {
+    condition = (
+      aws_instance.example.volume_tags["Owner"] == "platform" &&
+      aws_instance.example.volume_tags["Name"] == "terraform-example-volume"
+    )
+    error_message = "Custom ownership tags must propagate to the instance volumes."
+  }
 }
 
 run "accept_resource_tag_length_boundaries" {

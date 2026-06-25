@@ -64,6 +64,10 @@ resource "aws_instance" "example" {
   tags = merge(var.resource_tags, {
     Name = "terraform-example"
   })
+
+  volume_tags = merge(var.resource_tags, {
+    Name = "terraform-example-volume"
+  })
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
