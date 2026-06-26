@@ -30,6 +30,7 @@ PUBLIC_IP_OPT_IN_PLAN = DOCS_PLANS / "2026-06-17-public-ip-opt-in.md"
 NON_NULL_INPUTS_PLAN = DOCS_PLANS / "2026-06-18-non-null-default-inputs.md"
 MAKE_AUTHORITY_PLAN = DOCS_PLANS / "2026-06-21-make-authority-isolation.md"
 VOLUME_TAGS_PLAN = DOCS_PLANS / "2026-06-25-instance-volume-tags.md"
+OPERATOR_RUNBOOK_PLAN = DOCS_PLANS / "2026-06-26-operator-runbook.md"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "check.yml"
 LOCK_FILE = ROOT / ".terraform.lock.hcl"
 SERVER_PORT_TEST = ROOT / "tests" / "server_port.tftest.hcl"
@@ -151,6 +152,46 @@ def tracked_files():
 
 def hygiene_checks():
     errors = []
+    normalized_readme = " ".join(read_text("README.md").split())
+    for contract in (
+        "Safe Credential Boundary",
+        "AWS_PROFILE",
+        "aws sts get-caller-identity",
+        "Do not put AWS credentials in Terraform files",
+        "default VPC",
+        "Cost Boundary",
+        "one EC2 instance",
+        "encrypted root EBS volume",
+        "$0.005 per hour",
+        "AWS Pricing Calculator",
+        "Architecture and AMI Boundary",
+        "x86_64",
+        "arm64",
+        "Safe Plan and Apply",
+        "terraform plan -out=tfplan",
+        "terraform apply tfplan",
+        "terraform output public_ip",
+        "Restricting Ingress",
+        "`0.0.0.0/0`",
+        "Destroy and Verify Cleanup",
+        "terraform plan -destroy -out=tfplan-destroy",
+        "terraform apply tfplan-destroy",
+        "terraform state list",
+    ):
+        if contract not in normalized_readme:
+            errors.append(f"README operator runbook must preserve: {contract}")
+    normalized_vision = " ".join(read_text("VISION.md").split())
+    if "Keep credentials, cost, AMI architecture, ingress, apply, and destroy guidance synchronized with source and official provider behavior" not in normalized_vision:
+        errors.append("VISION must preserve the Terraform operator-runbook boundary")
+    normalized_changes = " ".join(read_text("CHANGES.md").split())
+    if "Completed all four Terraform operator-documentation priorities" not in normalized_changes:
+        errors.append("CHANGES must record the Terraform operator-runbook reconciliation")
+    if not OPERATOR_RUNBOOK_PLAN.exists():
+        errors.append("Terraform operator runbook plan is missing")
+    else:
+        operator_plan = OPERATOR_RUNBOOK_PLAN.read_text(encoding="utf-8")
+        if "Status: Completed" not in operator_plan or "Document the safe credential, cost, AMI, ingress, apply, and destroy workflow" not in operator_plan:
+            errors.append("Terraform operator runbook plan must record completed evidence")
     if not CANONICAL_PLAN.exists():
         errors.append("docs/plans/2026-06-08-terraform-basic-example-baseline.md is missing")
     if not SECURITY_GROUP_PLAN.exists():

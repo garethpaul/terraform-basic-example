@@ -39,6 +39,10 @@ Additional scan context:
 - Git
 - Terraform 1.5 or newer in the 1.x release line
 - Python 3 for static repository checks
+- An AWS account and credentials authorized to read the public Amazon Linux SSM
+  parameter and manage the example EC2 instance, security group, and root volume
+- A selected AWS region with a default VPC and default subnet behavior; this
+  example does not declare its own VPC or subnet
 
 ### Setup
 
@@ -48,11 +52,74 @@ cd terraform-basic-example
 terraform init
 ```
 
-The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
+Use `terraform init -lockfile=readonly` after the first successful initialization
+when you want to prove the checked-in AWS provider lock remains unchanged.
+
+### Safe Credential Boundary
+
+Prefer temporary credentials exposed through an AWS shared profile, SSO, or an
+assumed role. For a configured profile:
+
+```sh
+export AWS_PROFILE=terraform-example
+aws sts get-caller-identity
+```
+
+The AWS provider can read shared profiles and standard AWS environment
+variables. Do not put AWS credentials in Terraform files, `.tfvars`, shell
+history, commits, or pull requests. Environment credentials override profile
+credentials, so clear stale `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and
+`AWS_SESSION_TOKEN` values before relying on `AWS_PROFILE`.
+
+Official references: [Terraform provider authentication](https://developer.hashicorp.com/terraform/tutorials/configuration-language/configure-providers)
+and [AWS CLI configuration precedence](https://docs.aws.amazon.com/cli/latest/topic/config-vars.html).
+
+### Cost Boundary
+
+Applying the default plan creates one EC2 instance (`t2.micro` by default), its
+encrypted root EBS volume, and one security group. Compute and provisioned EBS
+storage can accrue charges even though default ingress and public IPv4
+assignment are disabled. Data transfer can add charges when the instance is
+reachable.
+
+If `allowed_cidr_blocks` is non-empty, the instance also requests a public IPv4
+address. As of June 26, 2026, AWS lists public IPv4 addresses at $0.005 per hour
+(about $3.60 for a 30-day month) in addition to compute, storage, and transfer.
+Prices, credits, taxes, instance availability, and Free Tier eligibility vary;
+do not assume this example is free. Estimate the selected region and runtime in
+the [AWS Pricing Calculator](https://calculator.aws/) and verify current
+[EC2](https://aws.amazon.com/ec2/pricing/on-demand/),
+[EBS](https://aws.amazon.com/ebs/pricing/), and
+[public IPv4](https://aws.amazon.com/vpc/pricing/) pricing before applying.
+
+### Architecture and AMI Boundary
+
+The default SSM parameter resolves the latest regional Amazon Linux 2023
+`x86_64` image. Keep the default or another x86-compatible instance type unless
+you deliberately set `ami_id`. For an `arm64` instance type, supply a reviewed
+regional arm64 AMI ID; changing only `instance_type` can produce an architecture
+mismatch during planning or launch. Explicit `ami_id` overrides bypass the SSM
+lookup, so the operator owns architecture, region, provenance, patch level, and
+user-data compatibility.
 
 ## Running or Using the Project
 
-- Use `terraform plan` after `terraform init` to inspect infrastructure changes before applying anything.
+### Safe Plan and Apply
+
+Keep the plan artifact and the apply operation tied to the same reviewed input:
+
+```sh
+/usr/bin/make check
+terraform init -lockfile=readonly
+terraform plan -out=tfplan
+terraform show tfplan
+terraform apply tfplan
+terraform output public_ip
+```
+
+Do not apply an unreviewed regenerated plan. With the private default,
+`public_ip` is empty and the demo server is not reachable from the internet.
+
 - The region-local Amazon Linux 2023 default AMI is resolved through AWS's
   public Systems Manager parameter. Set `ami_id` only for an architecture- or
   workload-specific image; explicit overrides bypass that lookup and retain
@@ -66,6 +133,35 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   the reserved documentation address with the caller's public IP. This opts in
   to both settings; the selected subnet must still provide routing for
   end-to-end reachability, and a public IPv4 address may incur AWS charges.
+
+### Restricting Ingress
+
+Keep `allowed_cidr_blocks = []` unless internet access is required. If access is
+required, prefer the caller's reviewed canonical `/32` and inspect the saved
+plan for exactly one HTTP rule and one public IPv4 assignment. Avoid
+`0.0.0.0/0`; it exposes the unauthenticated Python demo server to every IPv4
+source and increases both security and cost risk.
+
+### Destroy and Verify Cleanup
+
+This example is intended to be short-lived. Review and apply a saved destroy
+plan as soon as testing ends:
+
+```sh
+terraform plan -destroy -out=tfplan-destroy
+terraform show tfplan-destroy
+terraform apply tfplan-destroy
+terraform state list
+rm -f tfplan tfplan-destroy
+```
+
+After a successful destroy, `terraform state list` should contain no
+`aws_instance.example` or `aws_security_group.instance` managed addresses.
+Confirm the tagged instance, security group, and root volume are gone in the
+selected AWS region; billing can continue for resources left outside the current
+state or account/region. HashiCorp documents `terraform destroy` as the
+interactive shortcut, but a saved destroy plan keeps review and execution tied
+to the same proposed cleanup.
 
 ## Testing and Verification
 

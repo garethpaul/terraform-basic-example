@@ -37,6 +37,8 @@ Priority:
 - Keep security group purpose visible in AWS plans and tags
 - Keep common ownership tags on demo compute, storage, and network resources
   for cleanup traceability
+- Keep credentials, cost, AMI architecture, ingress, apply, and destroy
+  guidance synchronized with source and official provider behavior
 - Avoid committing credentials or local state files
 - Keep completed maintenance plans under `docs/plans`
 - Keep reproducible Terraform initialization and validation running in GitHub Actions
@@ -44,10 +46,6 @@ Priority:
 
 Next priorities:
 
-- Add quickstart and destroy instructions to the README
-- Document expected AWS costs and required credentials
-- Document architecture-specific AMI overrides and update expectations
-- Add notes about restricting ingress beyond demo use
 
 Contribution rules:
 
