@@ -94,6 +94,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   over 256 characters before provider planning.
 - Resource tag count validation reserves the resource-owned `Name` key and
   rejects inputs that would produce more than 50 final EC2 tags.
+- Resource tag whitespace validation rejects keys and values with leading or
+  trailing whitespace so ownership, cleanup, cost, and policy matches remain
+  exact; internal spaces remain supported.
 - The instance applies validated shared ownership tags to its created EBS
   volumes at creation time, with a volume-specific `Name` tag for cleanup and
   cost traceability.

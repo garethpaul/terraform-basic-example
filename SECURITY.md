@@ -50,6 +50,8 @@ Helpful reports include:
   provider or AWS API interaction.
 - Resource tag count validation includes the resource-owned `Name` key and
   rejects final EC2 tag sets above the 50-tag service limit.
+- Resource tag whitespace validation rejects leading or trailing whitespace
+  instead of creating visually ambiguous ownership and policy identifiers.
 - Validated shared ownership tags are applied when the instance's EBS volumes
   are created, keeping storage visible for cleanup and cost attribution.
 - Ingress validation requires canonical IPv4 CIDRs and rejects IPv6,

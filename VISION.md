@@ -24,6 +24,8 @@ Priority:
   override path
 - Preserve resource tag length validation before provider planning
 - Preserve resource tag count validation after resource-owned tag merging
+- Preserve resource tag whitespace validation for exact ownership and cleanup
+  identifiers
 - Validate ingress as canonical IPv4 CIDR input before Terraform plans reach AWS
 - Keep public IPv4 assignment disabled with the default no-ingress inputs and
   couple public address requests to the existing ingress opt-in

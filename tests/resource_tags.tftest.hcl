@@ -13,6 +13,16 @@ run "accept_default_resource_tags" {
   }
 }
 
+run "accept_resource_tag_internal_spaces" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      "Cost Center" = "platform team"
+    }
+  }
+}
+
 run "propagate_custom_resource_tags_to_volumes" {
   command = plan
 
@@ -94,6 +104,30 @@ run "reject_blank_resource_tag_value" {
   variables {
     resource_tags = {
       Owner = " "
+    }
+  }
+
+  expect_failures = [var.resource_tags]
+}
+
+run "reject_resource_tag_key_with_surrounding_whitespace" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      " Owner" = "platform"
+    }
+  }
+
+  expect_failures = [var.resource_tags]
+}
+
+run "reject_resource_tag_value_with_surrounding_whitespace" {
+  command = plan
+
+  variables {
+    resource_tags = {
+      Owner = "platform "
     }
   }
 
