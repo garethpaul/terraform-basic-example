@@ -1,5 +1,78 @@
 # Changes
 
+## 2026-06-26 04:04 PDT - P2 - Add the safe operator runbook
+
+### Summary
+
+Completed all four Terraform operator-documentation priorities with a
+source-backed runbook for credentials, default-network assumptions, cost,
+AMI architecture, ingress, saved apply plans, and reviewed cleanup.
+
+### Work completed
+
+- Documented temporary/profile credential use and AWS credential precedence.
+- Listed the security-group resource plus the EC2, EBS, optional IPv4, and
+  transfer cost surface without promising Free Tier eligibility or a
+  region-independent bill.
+- Documented the x86_64 default SSM image and explicit arm64 override boundary.
+- Added saved plan/apply, output, narrow ingress, saved destroy, state, and
+  account/region cleanup verification steps.
+- Added fail-closed runbook, roadmap, history, and completed-plan contracts.
+
+### Threads
+
+- Started: none; the cohesive documentation work was handled directly.
+- Continued: none.
+- Stopped: none.
+
+### Files changed
+
+- `README.md` — added the complete operator runbook and official references.
+- `VISION.md` — retired the four completed documentation priorities.
+- `scripts/check-terraform-source.py` — added runbook drift contracts.
+- `docs/plans/2026-06-26-operator-runbook.md` — recorded the implementation plan.
+- `CHANGES.md` — recorded this cycle and its validation.
+
+### Validation
+
+- Initial hygiene checker — failed on the absent runbook contracts as expected.
+- Focused hygiene checker — passed after the runbook reconciliation.
+- Hostile runbook suite — rejected all 26 isolated README, roadmap, history,
+  and completed-plan mutations.
+- Checkout and external-directory `/usr/bin/make check` — each passed 35 Make
+  authority cases, 17 workflow mutations, six resource-tag mutations, five
+  public-IPv4 mutations, hygiene checks, and configuration checks. Terraform
+  was unavailable locally, so native format/init/validate/test was skipped.
+- Source audit — matched the one-instance/one-security-group resource surface,
+  x86_64 SSM default, ingress/public-IP coupling, encrypted root volume, and
+  default-network assumption to checked-in Terraform.
+- Official-source audit — matched credential precedence and provider
+  authentication to AWS/HashiCorp documentation, current public IPv4 pricing to
+  AWS VPC pricing, and saved destroy-plan behavior to Terraform documentation.
+- Pricing arithmetic — confirmed `$0.005 * 24 * 30 = $3.60` for the explicitly
+  qualified 30-day public-IPv4 estimate.
+- `git diff --check` — passed; no resource, variable, provider, test, lock, or
+  workflow behavior changed.
+- Hosted native Terraform, CodeQL, and exact-head review remain pending until
+  the PR head is available.
+
+### Bugs / findings
+
+- P2: the previous README omitted required AWS permissions, default-VPC
+  dependence, complete cost components, AMI architecture matching, saved apply
+  plans, and a reviewable destroy workflow.
+
+### Blockers
+
+- No live AWS plan, apply, or destroy is executed from this maintenance session;
+  account-specific permissions, pricing, networking, and cleanup remain operator
+  responsibilities.
+
+### Next action
+
+- Require exact-head hosted Terraform and CodeQL gates before merge, then run
+  the same gates on the merge commit.
+
 ## 2026-06-25
 
 - Added resource tag whitespace validation so leading or trailing whitespace
