@@ -108,6 +108,34 @@ def resource_tag_merge_errors(main):
     return []
 
 
+def resource_tag_validation_errors(variables, resource_tags_test):
+    errors = []
+    for fragment in (
+        "length(var.resource_tags) > 0",
+        "length(trimspace(key)) > 0",
+        "length(trimspace(value)) > 0",
+        "key == trimspace(key)",
+        "value == trimspace(value)",
+        "length(key) <= 128",
+        "length(value) <= 256",
+        '!startswith(lower(key), "aws:")',
+        'length(setunion(toset(keys(var.resource_tags)), toset(["Name"]))) <= 50',
+    ):
+        if fragment not in variables:
+            errors.append(f"resource_tags validation is missing contract: {fragment}")
+    for fragment in (
+        'run "reject_resource_tag_key_with_surrounding_whitespace"',
+        'run "reject_resource_tag_value_with_surrounding_whitespace"',
+        '" Owner" = "platform"',
+        'Owner = "platform "',
+    ):
+        if fragment not in resource_tags_test:
+            errors.append(f"resource tags Terraform test is missing contract: {fragment}")
+    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 9:
+        errors.append("resource tags Terraform tests must expect all nine validation failures")
+    return errors
+
+
 def tracked_files():
     result = subprocess.run(
         ["git", "ls-files"],
@@ -293,6 +321,8 @@ def hygiene_checks():
             errors.append(f"{doc_path} must document resource tag length validation")
         if "resource tag count validation" not in document.lower():
             errors.append(f"{doc_path} must document resource tag count validation")
+        if "resource tag whitespace validation" not in document.lower():
+            errors.append(f"{doc_path} must document resource tag whitespace validation")
         if "region-local amazon linux 2023 default ami" not in document.lower():
             errors.append(f"{doc_path} must document the region-local Amazon Linux 2023 default AMI")
 
@@ -551,17 +581,7 @@ def config_checks():
         errors.append("resource_tags must be a string map")
     if 'ManagedBy = "terraform"' not in variables or 'Project   = "terraform-basic-example"' not in variables:
         errors.append("resource_tags must include default ownership tags")
-    for fragment in (
-        "length(var.resource_tags) > 0",
-        "length(trimspace(key)) > 0",
-        "length(trimspace(value)) > 0",
-        "length(key) <= 128",
-        "length(value) <= 256",
-        '!startswith(lower(key), "aws:")',
-        'length(setunion(toset(keys(var.resource_tags)), toset(["Name"]))) <= 50',
-    ):
-        if fragment not in variables:
-            errors.append(f"resource_tags validation is missing contract: {fragment}")
+    errors.extend(resource_tag_validation_errors(variables, resource_tags_test))
     if 'variable "server_port"' in variables and "validation {" not in variables:
         errors.append("server_port must include Terraform variable validation")
     if "var.server_port == floor(var.server_port)" not in variables:
@@ -578,6 +598,7 @@ def config_checks():
     for fragment in (
         'mock_provider "aws" {}',
         'run "accept_default_resource_tags"',
+        'run "accept_resource_tag_internal_spaces"',
         'run "propagate_custom_resource_tags_to_volumes"',
         'run "reject_empty_resource_tags"',
         'run "reject_blank_resource_tag_key"',
@@ -601,12 +622,11 @@ def config_checks():
         'aws_instance.example.volume_tags["Owner"] == "platform"',
         'aws_instance.example.volume_tags["Name"] == "terraform-example-volume"',
         "resource_tags = {}",
+        '"Cost Center" = "platform team"',
         '"aws:owner" = "platform"',
     ):
         if fragment not in resource_tags_test:
             errors.append(f"resource tags Terraform test is missing contract: {fragment}")
-    if resource_tags_test.count("expect_failures = [var.resource_tags]") != 7:
-        errors.append("resource tags Terraform tests must expect all seven validation failures")
     if "metadata_options" not in main or not re.search(r'http_tokens\s+=\s+"required"', main):
         errors.append("aws_instance.example must require IMDSv2 with http_tokens")
     if not re.search(r'http_put_response_hop_limit\s+=\s+1', main):

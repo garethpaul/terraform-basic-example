@@ -2,6 +2,10 @@
 
 ## 2026-06-25
 
+- Added resource tag whitespace validation so leading or trailing whitespace
+  cannot create visually ambiguous ownership, cleanup, cost, or policy keys.
+- Added mocked Terraform failures and portable hostile mutations for both tag
+  key and value boundaries.
 - Propagated validated shared ownership tags to the EC2 instance's created EBS
   volumes with a volume-specific `Name` tag for cleanup and cost traceability.
 - Added mocked Terraform and portable source contracts for default and custom
