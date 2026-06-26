@@ -1,5 +1,58 @@
 # Changes
 
+## 2026-06-26 12:53 PDT - P3 - Audit Terraform baseline
+
+### Summary
+
+Completed a no-change maintenance audit of the public repository after all
+open work was cleared. No source, provider, workflow, security, or roadmap
+correction was justified by the available evidence.
+
+### Work completed
+
+- Confirmed there are no open public pull requests, issues, Dependabot alerts,
+  code-scanning alerts, or secret-scanning alerts.
+- Reviewed the Terraform resources, variables, outputs, provider lock,
+  completed plans, operator guidance, and empty next-priority roadmap.
+- Confirmed the AWS provider lock remains at the reviewed 6.50.0 release and
+  the configuration still preserves private-by-default ingress and public IPv4
+  coupling, IMDSv2, encrypted root storage, validated tags, and AL2023 lookup.
+
+### Threads
+
+- Started: none.
+- Continued: none.
+- Stopped: none.
+
+### Files changed
+
+- `CHANGES.md` — recorded this no-change public maintenance cycle.
+
+### Validation
+
+- All seven Make aliases passed from the repository root: 35 Make authority
+  cases, 17 workflow mutations, six resource-tag mutations, five public-IPv4
+  mutations, hygiene checks, and configuration checks.
+- GitHub security APIs returned no open dependency, code-scanning, or
+  secret-scanning alerts.
+- `terraform` was unavailable locally, so native format, read-only init,
+  validate, and mocked Terraform tests remain delegated to the hosted gate.
+
+### Bugs / findings
+
+- None. The audit did not identify a correctness, security, CI, documentation,
+  or incomplete-work defect that warranted changing repository behavior.
+
+### Blockers
+
+- No live AWS plan, apply, or destroy was executed; account-specific runtime
+  behavior remains outside this credential-free maintenance environment.
+
+### Next action
+
+- Require hosted Terraform, CodeQL, and exact-head review before merging this
+  audit record, then continue to the next public repository.
+
 ## 2026-06-26 04:04 PDT - P2 - Add the safe operator runbook
 
 ### Summary
